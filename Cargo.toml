@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ggez = "0.9"
-dxf = "0.5"
-rfd = "0.11"  # For the file save dialog
+gl = "0.14.0"
+glutin = "0.32.2"
+winit = "=0.26.1"
