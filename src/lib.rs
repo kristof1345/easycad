@@ -12,6 +12,7 @@ struct State<'a> {
     queue: wgpu::Queue,
     surface: wgpu::Surface<'a>,
     size: winit::dpi::PhysicalSize<u32>,
+    config: wgpu::SurfaceConfiguration,
 }
 
 impl<'a> State<'a> {
@@ -48,17 +49,72 @@ impl<'a> State<'a> {
             .await
             .unwrap();
 
+        let config = surface
+            .get_default_config(&adapter, size.width, size.height)
+            .unwrap();
+
+        // surface.configure(&device, &config);
+
         Self {
             window,
             queue,
             device,
             size,
             surface,
+            config,
         }
     }
 
     pub fn window(&self) -> &Window {
         &self.window
+    }
+
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        if new_size.width > 0 && new_size.height > 0 {
+            self.size = new_size;
+            self.config.width = new_size.width;
+            self.config.height = new_size.height;
+            self.surface.configure(&self.device, &self.config);
+        }
+    }
+
+    pub fn render(&self) {
+        let frame = self.surface.get_current_texture().unwrap();
+
+        let view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Command Encoder"),
+            });
+
+        {
+            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.1,
+                            g: 0.3,
+                            b: 0.4,
+                            a: 1.0,
+                        }),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+        }
+
+        self.queue.submit(Some(encoder.finish()));
+        frame.present();
     }
 }
 
@@ -69,7 +125,7 @@ pub async fn run() {
 
     event_loop.set_control_flow(ControlFlow::Wait);
 
-    let state = State::new(&window).await;
+    let mut state = State::new(&window).await;
 
     event_loop
         .run(move |event, control_flow| match event {
@@ -78,6 +134,13 @@ pub async fn run() {
                     WindowEvent::CloseRequested => {
                         println!("adios");
                         control_flow.exit();
+                    }
+                    WindowEvent::Resized(new_size) => {
+                        state.resize(new_size);
+                    }
+                    WindowEvent::RedrawRequested => {
+                        state.window().request_redraw();
+                        state.render();
                     }
                     _ => {}
                 }
