@@ -231,12 +231,25 @@ impl<'a> State<'a> {
         self.update_vertex_buffer();
     }
 
+    pub fn update_line(&mut self, position: [f32; 2]) {
+        self.vertices[(self.num_vertices - 1) as usize] = Vertex {
+            position: [position[0], position[1], 0.0],
+            color: [1.0, 1.0, 1.0],
+        };
+        self.update_vertex_buffer();
+    }
+
     pub fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
             WindowEvent::CursorMoved { position, .. } => {
                 let x = (2.0 * position.x as f32 / self.size.width as f32) - 1.0;
                 let y = 1.0 - (2.0 * position.y as f32 / self.size.height as f32);
                 self.cursor_position = Some([x, y]);
+
+                if let DrawingState::WaitingForSecondPoint(_start_pos) = self.drawing_state {
+                    self.update_line([x, y]);
+                }
+
                 true
             }
             WindowEvent::MouseInput {
@@ -248,9 +261,11 @@ impl<'a> State<'a> {
                     match self.drawing_state {
                         DrawingState::Idle => {
                             self.drawing_state = DrawingState::WaitingForSecondPoint(position);
+                            self.add_line(position, position);
                         }
-                        DrawingState::WaitingForSecondPoint(start_pos) => {
-                            self.add_line(start_pos, position);
+                        DrawingState::WaitingForSecondPoint(_start_pos) => {
+                            self.update_line(position);
+                            // println!("{:#?}", self.vertices);
                             self.drawing_state = DrawingState::Idle;
                         }
                     }
