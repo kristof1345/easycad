@@ -14,6 +14,12 @@ struct Vertex {
     color: [f32; 3],
 }
 
+#[derive(Debug)]
+enum DrawingState {
+    Idle,
+    WaitingForSecondPoint([f32; 2]),
+}
+
 impl Vertex {
     fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
@@ -44,19 +50,22 @@ struct State<'a> {
     config: wgpu::SurfaceConfiguration,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
+    vertices: Vec<Vertex>,
     num_vertices: u32,
+    drawing_state: DrawingState,
+    cursor_position: Option<[f32; 2]>,
 }
 
-const VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [0.0, 0.0, 0.0],
-        color: [0.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, 0.0],
-        color: [0.0, 0.0, 0.0],
-    },
-];
+// const VERTICES: &[Vertex] = &[
+//     Vertex {
+//         position: [0.0, 0.0, 0.0],
+//         color: [0.0, 0.0, 0.0],
+//     },
+//     Vertex {
+//         position: [0.5, 0.5, 0.0],
+//         color: [0.0, 0.0, 0.0],
+//     },
+// ];
 
 impl<'a> State<'a> {
     pub async fn new(window: &'a Window) -> Self {
@@ -114,10 +123,6 @@ impl<'a> State<'a> {
             desired_maximum_frame_latency: 2,
         };
 
-        let num_vertices = VERTICES.len() as u32;
-
-        // surface.configure(&device, &config);
-
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Pipeline Layout"),
             bind_group_layouts: &[],
@@ -167,10 +172,11 @@ impl<'a> State<'a> {
             cache: None,
         });
 
+        let vertices = Vec::new();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("vertex buffer"),
-            usage: wgpu::BufferUsages::VERTEX,
-            contents: bytemuck::cast_slice(VERTICES),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            contents: bytemuck::cast_slice(&vertices),
         });
 
         Self {
@@ -182,7 +188,10 @@ impl<'a> State<'a> {
             config,
             render_pipeline,
             vertex_buffer,
-            num_vertices,
+            num_vertices: 0,
+            vertices,
+            drawing_state: DrawingState::Idle,
+            cursor_position: None,
         }
     }
 
@@ -196,6 +205,59 @@ impl<'a> State<'a> {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+        }
+    }
+
+    pub fn update_vertex_buffer(&mut self) {
+        self.vertex_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("vertex buffer"),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                contents: bytemuck::cast_slice(&self.vertices),
+            });
+        self.num_vertices = self.vertices.len() as u32;
+    }
+
+    pub fn add_line(&mut self, start: [f32; 2], end: [f32; 2]) {
+        self.vertices.push(Vertex {
+            position: [start[0], start[1], 0.0],
+            color: [1.0, 1.0, 1.0],
+        });
+        self.vertices.push(Vertex {
+            position: [end[0], end[1], 0.0],
+            color: [1.0, 1.0, 1.0],
+        });
+        self.update_vertex_buffer();
+    }
+
+    pub fn input(&mut self, event: &WindowEvent) -> bool {
+        match event {
+            WindowEvent::CursorMoved { position, .. } => {
+                let x = (2.0 * position.x as f32 / self.size.width as f32) - 1.0;
+                let y = 1.0 - (2.0 * position.y as f32 / self.size.height as f32);
+                self.cursor_position = Some([x, y]);
+                true
+            }
+            WindowEvent::MouseInput {
+                state: ElementState::Pressed,
+                button: MouseButton::Left,
+                ..
+            } => {
+                if let Some(position) = self.cursor_position {
+                    match self.drawing_state {
+                        DrawingState::Idle => {
+                            self.drawing_state = DrawingState::WaitingForSecondPoint(position);
+                        }
+                        DrawingState::WaitingForSecondPoint(start_pos) => {
+                            self.add_line(start_pos, position);
+                            self.drawing_state = DrawingState::Idle;
+                        }
+                    }
+                }
+                true
+            }
+            _ => false,
         }
     }
 
@@ -255,19 +317,21 @@ pub async fn run() {
     event_loop
         .run(move |event, control_flow| match event {
             Event::WindowEvent { event, window_id } if window_id == state.window().id() => {
-                match event {
-                    WindowEvent::CloseRequested => {
-                        println!("adios");
-                        control_flow.exit();
+                if !state.input(&event) {
+                    match event {
+                        WindowEvent::CloseRequested => {
+                            println!("adios");
+                            control_flow.exit();
+                        }
+                        WindowEvent::Resized(new_size) => {
+                            state.resize(new_size);
+                        }
+                        WindowEvent::RedrawRequested => {
+                            state.window().request_redraw();
+                            state.render();
+                        }
+                        _ => {}
                     }
-                    WindowEvent::Resized(new_size) => {
-                        state.resize(new_size);
-                    }
-                    WindowEvent::RedrawRequested => {
-                        state.window().request_redraw();
-                        state.render();
-                    }
-                    _ => {}
                 }
             }
             _ => {}
