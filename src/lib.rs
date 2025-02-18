@@ -4,7 +4,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-use wgpu::util::DeviceExt;
+use wgpu::util::{DeviceExt, RenderEncoder};
 use winit::window::Window;
 
 #[repr(C)]
@@ -50,10 +50,13 @@ struct State<'a> {
     config: wgpu::SurfaceConfiguration,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
+    zoom_buffer: wgpu::Buffer,
     vertices: Vec<Vertex>,
     num_vertices: u32,
     drawing_state: DrawingState,
     cursor_position: Option<[f32; 2]>,
+    zoom: f32,
+    zoom_bind_group: wgpu::BindGroup,
 }
 
 // const VERTICES: &[Vertex] = &[
@@ -123,9 +126,38 @@ impl<'a> State<'a> {
             desired_maximum_frame_latency: 2,
         };
 
+        let zoom: f32 = 1.0;
+
+        let zoom_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("zoom buffer"),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            contents: bytemuck::cast_slice(&[zoom]),
+        });
+
+        let zoom_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("zoom bind group layout"), entries: &[wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::VERTEX,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        }],
+        });
+
+        let zoom_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor { 
+            label: Some("zoom bind group"), 
+            layout: &zoom_bind_group_layout, 
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: zoom_buffer.as_entire_binding(),
+            }]
+        });
+
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Pipeline Layout"),
-            bind_group_layouts: &[],
+            bind_group_layouts: &[&zoom_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -179,6 +211,7 @@ impl<'a> State<'a> {
             contents: bytemuck::cast_slice(&vertices),
         });
 
+
         Self {
             window,
             queue,
@@ -192,6 +225,9 @@ impl<'a> State<'a> {
             vertices,
             drawing_state: DrawingState::Idle,
             cursor_position: None,
+            zoom,
+            zoom_buffer,
+            zoom_bind_group
         }
     }
 
@@ -221,19 +257,22 @@ impl<'a> State<'a> {
 
     pub fn add_line(&mut self, start: [f32; 2], end: [f32; 2]) {
         self.vertices.push(Vertex {
-            position: [start[0], start[1], 0.0],
+            position: [start[0] / self.zoom, start[1] / self.zoom, 0.0],
             color: [1.0, 1.0, 1.0],
         });
         self.vertices.push(Vertex {
-            position: [end[0], end[1], 0.0],
+            position: [end[0] / self.zoom, end[1] / self.zoom, 0.0],
             color: [1.0, 1.0, 1.0],
         });
         self.update_vertex_buffer();
     }
 
     pub fn update_line(&mut self, position: [f32; 2]) {
+        let world_x = position[0] / self.zoom; // Apply zoom correctly
+        let world_y = position[1] / self.zoom;
+
         self.vertices[(self.num_vertices - 1) as usize] = Vertex {
-            position: [position[0], position[1], 0.0],
+            position: [world_x, world_y, 0.0],
             color: [1.0, 1.0, 1.0],
         };
         self.update_vertex_buffer();
@@ -270,6 +309,22 @@ impl<'a> State<'a> {
                         }
                     }
                 }
+                true
+            }
+            WindowEvent::MouseWheel {delta, ..} => {
+                let zoom_speed = 0.1;
+                match delta {
+                    MouseScrollDelta::LineDelta(_, y) => {
+                        self.zoom *= 1.0 + zoom_speed * y.signum();
+                    },
+                    MouseScrollDelta::PixelDelta(pos) => {
+                        self.zoom *= 1.0 + zoom_speed * pos.y.signum() as f32;
+                    }
+                }
+
+                self.zoom = self.zoom.clamp(0.1, 10.0);
+                self.queue.write_buffer(&self.zoom_buffer, 0, bytemuck::cast_slice(&[self.zoom]));
+                
                 true
             }
             _ => false,
@@ -312,6 +367,7 @@ impl<'a> State<'a> {
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_bind_group(0, &self.zoom_bind_group, &[]);
             render_pass.draw(0..self.num_vertices, 0..1);
         }
 
