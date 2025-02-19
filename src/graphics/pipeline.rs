@@ -1,4 +1,5 @@
 use crate::Vertex;
+use egui_wgpu::wgpu;
 use wgpu::{BindGroupLayout, Device, ShaderModule, SurfaceConfiguration};
 
 pub struct Pipeline {
@@ -24,13 +25,13 @@ impl Pipeline {
             vertex: wgpu::VertexState {
                 module: shader,
                 entry_point: "vs_main",
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                // compilation_options: wgpu::PipelineCompilationOptions::default(),
                 buffers: &[Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: shader,
                 entry_point: "fs_main",
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                // compilation_options: wgpu::PipelineCompilationOptions::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -53,7 +54,7 @@ impl Pipeline {
                 alpha_to_coverage_enabled: false,
             },
             multiview: None,
-            cache: None,
+            // cache: None,
         });
 
         Self { render_pipeline }
