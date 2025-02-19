@@ -1,44 +1,26 @@
+mod graphics;
+mod events;
+mod model;
+
+use graphics::pipeline::Pipeline;
+use graphics::vertex::Vertex;
+use graphics::renderer;
+// use graphics::ui;
+use events::input;
+
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
 
-use wgpu::util::{DeviceExt, RenderEncoder};
+use wgpu::util::DeviceExt;
 use winit::window::Window;
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
-    position: [f32; 3],
-    color: [f32; 3],
-}
 
 #[derive(Debug)]
 enum DrawingState {
     Idle,
     WaitingForSecondPoint([f32; 2]),
-}
-
-impl Vertex {
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-                wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-            ],
-        }
-    }
 }
 
 struct State<'a> {
@@ -58,17 +40,6 @@ struct State<'a> {
     zoom: f32,
     zoom_bind_group: wgpu::BindGroup,
 }
-
-// const VERTICES: &[Vertex] = &[
-//     Vertex {
-//         position: [0.0, 0.0, 0.0],
-//         color: [0.0, 0.0, 0.0],
-//     },
-//     Vertex {
-//         position: [0.5, 0.5, 0.0],
-//         color: [0.0, 0.0, 0.0],
-//     },
-// ];
 
 impl<'a> State<'a> {
     pub async fn new(window: &'a Window) -> Self {
@@ -104,11 +75,7 @@ impl<'a> State<'a> {
             .await
             .unwrap();
 
-        // let config = surface
-        //     .get_default_config(&adapter, size.width, size.height)
-        //     .unwrap();
-        //
-        let surface_caps = surface.get_capabilities(&adapter);
+       let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
             .formats
             .iter()
@@ -134,17 +101,19 @@ impl<'a> State<'a> {
             contents: bytemuck::cast_slice(&[zoom]),
         });
 
-        let zoom_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("zoom bind group layout"), entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            },
-            count: None,
-        }],
-        });
+        let zoom_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                        label: Some("zoom bind group layout"),
+                        entries: &[wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::VERTEX,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        }],
+                    });
 
         let zoom_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor { 
             label: Some("zoom bind group"), 
@@ -155,54 +124,12 @@ impl<'a> State<'a> {
             }]
         });
 
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Pipeline Layout"),
-            bind_group_layouts: &[&zoom_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("shader module"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("line.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("assets/line.wgsl").into()),
         });
 
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-                buffers: &[Vertex::desc()],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::LineList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                unclipped_depth: false,
-                conservative: false,
-                polygon_mode: wgpu::PolygonMode::Fill,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-            cache: None,
-        });
+        let render_pipeline = Pipeline::new(&device, &config, &shader, &zoom_bind_group_layout).render_pipeline;
 
         let vertices = Vec::new();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -210,7 +137,6 @@ impl<'a> State<'a> {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             contents: bytemuck::cast_slice(&vertices),
         });
-
 
         Self {
             window,
@@ -221,13 +147,13 @@ impl<'a> State<'a> {
             config,
             render_pipeline,
             vertex_buffer,
-            num_vertices: 0,
             vertices,
+            num_vertices: 0,
             drawing_state: DrawingState::Idle,
             cursor_position: None,
             zoom,
             zoom_buffer,
-            zoom_bind_group
+            zoom_bind_group,
         }
     }
 
@@ -255,124 +181,12 @@ impl<'a> State<'a> {
         self.num_vertices = self.vertices.len() as u32;
     }
 
-    pub fn add_line(&mut self, start: [f32; 2], end: [f32; 2]) {
-        self.vertices.push(Vertex {
-            position: [start[0] / self.zoom, start[1] / self.zoom, 0.0],
-            color: [1.0, 1.0, 1.0],
-        });
-        self.vertices.push(Vertex {
-            position: [end[0] / self.zoom, end[1] / self.zoom, 0.0],
-            color: [1.0, 1.0, 1.0],
-        });
-        self.update_vertex_buffer();
-    }
-
-    pub fn update_line(&mut self, position: [f32; 2]) {
-        let world_x = position[0] / self.zoom; // Apply zoom correctly
-        let world_y = position[1] / self.zoom;
-
-        self.vertices[(self.num_vertices - 1) as usize] = Vertex {
-            position: [world_x, world_y, 0.0],
-            color: [1.0, 1.0, 1.0],
-        };
-        self.update_vertex_buffer();
-    }
-
     pub fn input(&mut self, event: &WindowEvent) -> bool {
-        match event {
-            WindowEvent::CursorMoved { position, .. } => {
-                let x = (2.0 * position.x as f32 / self.size.width as f32) - 1.0;
-                let y = 1.0 - (2.0 * position.y as f32 / self.size.height as f32);
-                self.cursor_position = Some([x, y]);
-
-                if let DrawingState::WaitingForSecondPoint(_start_pos) = self.drawing_state {
-                    self.update_line([x, y]);
-                }
-
-                true
-            }
-            WindowEvent::MouseInput {
-                state: ElementState::Pressed,
-                button: MouseButton::Left,
-                ..
-            } => {
-                if let Some(position) = self.cursor_position {
-                    match self.drawing_state {
-                        DrawingState::Idle => {
-                            self.drawing_state = DrawingState::WaitingForSecondPoint(position);
-                            self.add_line(position, position);
-                        }
-                        DrawingState::WaitingForSecondPoint(_start_pos) => {
-                            self.update_line(position);
-                            // println!("{:#?}", self.vertices);
-                            self.drawing_state = DrawingState::Idle;
-                        }
-                    }
-                }
-                true
-            }
-            WindowEvent::MouseWheel {delta, ..} => {
-                let zoom_speed = 0.1;
-                match delta {
-                    MouseScrollDelta::LineDelta(_, y) => {
-                        self.zoom *= 1.0 + zoom_speed * y.signum();
-                    },
-                    MouseScrollDelta::PixelDelta(pos) => {
-                        self.zoom *= 1.0 + zoom_speed * pos.y.signum() as f32;
-                    }
-                }
-
-                self.zoom = self.zoom.clamp(0.1, 10.0);
-                self.queue.write_buffer(&self.zoom_buffer, 0, bytemuck::cast_slice(&[self.zoom]));
-                
-                true
-            }
-            _ => false,
-        }
+        input::handle_input(self, event)
     }
 
-    pub fn render(&self) {
-        let frame = self.surface.get_current_texture().unwrap();
-
-        let view = frame
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Command Encoder"),
-            });
-
-        {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.3,
-                            b: 0.4,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_bind_group(0, &self.zoom_bind_group, &[]);
-            render_pass.draw(0..self.num_vertices, 0..1);
-        }
-
-        self.queue.submit(Some(encoder.finish()));
-        frame.present();
+    pub fn render(&mut self) {
+        renderer::render(self);
     }
 }
 
