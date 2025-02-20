@@ -1,10 +1,40 @@
 use crate::model::line::LineOps;
 use crate::DrawingState; // Import the enum if it's in another module
-use crate::State; // Import your struct
+use crate::Mode;
+use crate::State;
+use winit::event::KeyEvent;
+// Import your struct
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
+use winit::keyboard::KeyCode;
+use winit::keyboard::PhysicalKey;
 
 pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
     match event {
+        WindowEvent::KeyboardInput {
+            event:
+                KeyEvent {
+                    state: ElementState::Pressed,
+                    physical_key: PhysicalKey::Code(keycode),
+                    ..
+                },
+            ..
+        } => {
+            match keycode {
+                KeyCode::KeyL => {
+                    if state.mode == Mode::Normal {
+                        state.mode = Mode::DrawLine;
+                    }
+                }
+                KeyCode::Escape => {
+                    if !(state.mode == Mode::Normal) {
+                        state.mode = Mode::Normal;
+                    }
+                }
+                _ => {}
+            }
+
+            true
+        }
         WindowEvent::CursorMoved { position, .. } => {
             let x = (2.0 * position.x as f32 / state.size.width as f32) - 1.0;
             let y = 1.0 - (2.0 * position.y as f32 / state.size.height as f32);
@@ -23,15 +53,21 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
         } => {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
-                    DrawingState::Idle => {
-                        state.drawing_state = DrawingState::WaitingForSecondPoint(position);
-                        state.add_line(position, position);
-                    }
-                    DrawingState::WaitingForSecondPoint(_start_pos) => {
-                        state.update_line(position);
-                        // println!("{:#?}", state.vertices);
-                        state.drawing_state = DrawingState::Idle;
-                    }
+                    DrawingState::Idle => match state.mode {
+                        Mode::DrawLine => {
+                            state.drawing_state = DrawingState::WaitingForSecondPoint(position);
+                            state.add_line(position, position);
+                        }
+                        _ => {}
+                    },
+                    DrawingState::WaitingForSecondPoint(_start_pos) => match state.mode {
+                        Mode::DrawLine => {
+                            state.update_line(position);
+                            // println!("{:#?}", state.vertices);
+                            state.drawing_state = DrawingState::Idle;
+                        }
+                        _ => {}
+                    },
                 }
             }
             true

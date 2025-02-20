@@ -1,8 +1,10 @@
 use crate::State;
+use crate::GUI;
 use egui_wgpu::wgpu;
-// use egui_wgpu::ScreenDescriptor;
+use egui_wgpu::ScreenDescriptor;
+use std::iter;
 
-pub fn render(state: &mut State) {
+pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
     let frame = state.surface.get_current_texture().unwrap();
 
     let view = frame
@@ -14,38 +16,6 @@ pub fn render(state: &mut State) {
         .create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Command Encoder"),
         });
-
-    // // Start egui frame
-    // let raw_input = state.ui.state.take_egui_input(&state.window);
-    // state.ui.ctx.begin_frame(raw_input);
-
-    // // Create your egui UI here
-    // egui::Window::new("Controls").show(&state.ui.ctx, |ui| {
-    //     ui.label("Drawing Tools");
-    //     if ui.button("Clear").clicked() {
-    //         state.vertices.clear();
-    //     }
-    //     ui.add(egui::Slider::new(&mut state.zoom, 0.1..=5.0).text("Zoom"));
-    //     // Add more UI elements as needed
-    // });
-
-    // // End egui frame
-    // let full_output = state.ui.ctx.end_frame();
-    // let paint_jobs = state.ui.ctx.tessellate(full_output.shapes, 1.0);
-
-    // // Create the screen descriptor for egui
-    // let screen_descriptor = ScreenDescriptor {
-    //     size_in_pixels: [state.config.width, state.config.height],
-    //     pixels_per_point: state.window.scale_factor() as f32,
-    // };
-
-    // state.ui.renderer.update_buffers(
-    //     &state.device,
-    //     &state.queue,
-    //     &mut encoder,
-    //     &paint_jobs,
-    //     &screen_descriptor,
-    // );
 
     {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -74,6 +44,23 @@ pub fn render(state: &mut State) {
         render_pass.draw(0..state.num_vertices, 0..1);
     }
 
-    state.queue.submit(Some(encoder.finish()));
+    let screen_descriptor = ScreenDescriptor {
+        size_in_pixels: [state.config.width, state.config.height],
+        pixels_per_point: state.window().scale_factor() as f32,
+    };
+
+    state.egui.draw(
+        &state.device,
+        &state.queue,
+        &mut encoder,
+        &state.window,
+        &view,
+        screen_descriptor,
+        |ui| GUI(ui),
+    );
+
+    state.queue.submit(iter::once(encoder.finish()));
     frame.present();
+
+    Ok(())
 }
