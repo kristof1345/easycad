@@ -1,5 +1,5 @@
 use egui::epaint::Shadow;
-use egui::{Context, Visuals};
+use egui::{Align2, Context, Visuals};
 use egui_wgpu::Renderer;
 use egui_wgpu::ScreenDescriptor;
 
@@ -7,11 +7,11 @@ use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::{CommandEncoder, Device, Queue, TextureFormat, TextureView};
 use egui_winit::winit::event::WindowEvent;
 use egui_winit::winit::window::Window;
-use egui_winit::State;
+use egui_winit::State as EguiState;
 
 pub struct EguiRenderer {
     pub context: Context,
-    state: State,
+    state: EguiState,
     renderer: Renderer,
 }
 
@@ -37,7 +37,7 @@ impl EguiRenderer {
 
         egui_context.set_visuals(visuals);
 
-        let egui_state = State::new(egui_context.clone(), id, &window, None, None);
+        let egui_state = EguiState::new(egui_context.clone(), id, &window, None, None);
 
         // egui_state.set_pixels_per_point(window.scale_factor() as f32);
         let egui_renderer = Renderer::new(

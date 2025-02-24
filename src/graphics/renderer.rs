@@ -1,3 +1,4 @@
+use crate::Mode;
 use crate::State;
 use crate::GUI;
 use egui_wgpu::wgpu;
@@ -49,6 +50,8 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         pixels_per_point: state.window().scale_factor() as f32,
     };
 
+    let mode_flag = &mut state.mode;
+
     state.egui.draw(
         &state.device,
         &state.queue,
@@ -56,7 +59,11 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         &state.window,
         &view,
         screen_descriptor,
-        |ui| GUI(ui),
+        |ui| {
+            GUI(ui, || {
+                *mode_flag = Mode::DrawLine;
+            })
+        },
     );
 
     state.queue.submit(iter::once(encoder.finish()));
