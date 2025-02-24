@@ -7,12 +7,12 @@ mod model;
 use graphics::pipeline::Pipeline;
 use graphics::vertex::Vertex;
 use graphics::gui;
-use graphics::gui_example;
+use graphics::gui_elements;
 use graphics::renderer;
 use events::input;
 
 use gui::EguiRenderer;
-use gui_example::GUI;
+use gui_elements::GUI;
 use egui_wgpu::wgpu::util::DeviceExt;
 use egui_winit::winit::{
     event::*,

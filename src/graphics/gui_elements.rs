@@ -1,5 +1,4 @@
 use crate::Mode;
-use crate::State;
 use egui::{Align2, Context};
 
 // example
@@ -22,13 +21,17 @@ use egui::{Align2, Context};
 //         });
 // }
 
-pub fn GUI(ui: &Context, mut on_button_click: impl FnMut()) {
+pub fn GUI(ui: &Context) -> Option<Mode> {
+    let mut mode = None;
+
     egui::Area::new(egui::Id::new("idk"))
         .anchor(Align2::LEFT_TOP, [7.0, 5.0])
         .show(&ui, |ui| {
             if ui.add(egui::Button::new("line")).clicked() {
                 println!("pressed");
-                on_button_click();
+                mode = Some(Mode::DrawLine);
             }
         });
+
+    mode
 }

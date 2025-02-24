@@ -1,4 +1,3 @@
-use crate::Mode;
 use crate::State;
 use crate::GUI;
 use egui_wgpu::wgpu;
@@ -51,6 +50,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
     };
 
     let mode_flag = &mut state.mode;
+    // let mut gui_action = None;
 
     state.egui.draw(
         &state.device,
@@ -60,11 +60,20 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         &view,
         screen_descriptor,
         |ui| {
-            GUI(ui, || {
-                *mode_flag = Mode::DrawLine;
-            })
+            if let Some(mode) = GUI(ui) {
+                *mode_flag = mode;
+                // gui_action = Some(action);
+            }
         },
     );
+
+    // if let Some(action) = gui_action {
+    //     match action {
+    //         GuiAction::ToggleLine => {
+    //             state.show_line = !state.show_line;
+    //         }
+    //     }
+    // }
 
     state.queue.submit(iter::once(encoder.finish()));
     frame.present();
