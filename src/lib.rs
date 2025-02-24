@@ -19,6 +19,7 @@ use egui_winit::winit::{
     event_loop::{EventLoop, ControlFlow},
     window::{Window, WindowBuilder},
 };
+use winit::window::CursorIcon;
 use egui_winit::winit;
 
 #[derive(Debug)]
@@ -261,6 +262,15 @@ pub async fn run() {
                                 }
                                 _ => {}
                             };
+
+                            match state.mode {
+                                Mode::Normal => {
+                                    state.window.set_cursor_icon(CursorIcon::Default);
+                                }
+                                Mode::DrawLine => {
+                                    state.window.set_cursor_icon(CursorIcon::Crosshair);
+                                }
+                            }
 
                             // state.egui.handle_input(&mut state.window, &event);
                         }

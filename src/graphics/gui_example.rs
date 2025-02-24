@@ -24,7 +24,7 @@ use egui::{Align2, Context};
 
 pub fn GUI(ui: &Context, mut on_button_click: impl FnMut()) {
     egui::Area::new(egui::Id::new("idk"))
-        .anchor(Align2::LEFT_TOP, [0.0, 0.0])
+        .anchor(Align2::LEFT_TOP, [7.0, 5.0])
         .show(&ui, |ui| {
             if ui.add(egui::Button::new("line")).clicked() {
                 println!("pressed");

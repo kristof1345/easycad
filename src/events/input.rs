@@ -23,11 +23,13 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 KeyCode::KeyL => {
                     if state.mode == Mode::Normal {
                         state.mode = Mode::DrawLine;
+                        // state.window.set_cursor_icon(CursorIcon::Crosshair);
                     }
                 }
                 KeyCode::Escape => {
                     if !(state.mode == Mode::Normal) {
                         state.mode = Mode::Normal;
+                        // state.window.set_cursor_icon(CursorIcon::Default);
                     }
                 }
                 _ => {}
