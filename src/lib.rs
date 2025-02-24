@@ -153,7 +153,7 @@ impl<'a> State<'a> {
             contents: bytemuck::cast_slice(&vertices),
         });
         
-        let mut egui = EguiRenderer::new(
+        let egui = EguiRenderer::new(
             &device,       // wgpu Device
             config.format, // TextureFormat
             None,          // this can be None

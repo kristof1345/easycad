@@ -92,6 +92,10 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
             true
         }
+        // WindowEvent::PanGesture { delta, .. } => {
+        //     println!("heyho");
+        //     true
+        // }
         _ => false,
     }
 }
