@@ -9,6 +9,7 @@ use graphics::vertex::Vertex;
 use graphics::gui;
 use graphics::gui_elements;
 use graphics::renderer;
+use graphics::camera;
 use events::input;
 
 use gui::EguiRenderer;
@@ -43,15 +44,21 @@ struct State<'a> {
     config: wgpu::SurfaceConfiguration,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
-    zoom_buffer: wgpu::Buffer,
+    // zoom_buffer: wgpu::Buffer,
     vertices: Vec<Vertex>,
     num_vertices: u32,
     drawing_state: DrawingState,
     mode: Mode,
     cursor_position: Option<[f32; 2]>,
-    zoom: f32,
-    zoom_bind_group: wgpu::BindGroup,
+    // zoom: f32,
+    // zoom_bind_group: wgpu::BindGroup,
     egui: EguiRenderer,
+    camera: camera::Camera,
+    camera_buffer: wgpu::Buffer,
+    camera_bind_group: wgpu::BindGroup,
+    dragging: bool,
+    last_mouse_x: f32,
+    last_mouse_y: f32,
 }
 
 impl<'a> State<'a> {
@@ -108,15 +115,47 @@ impl<'a> State<'a> {
 
         surface.configure(&device, &config);
 
-        let zoom: f32 = 1.0;
+        // let zoom: f32 = 1.0;
 
-        let zoom_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("zoom buffer"),
+        // let zoom_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //     label: Some("zoom buffer"),
+        //     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        //     contents: bytemuck::cast_slice(&[zoom]),
+        // });
+
+        // let zoom_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        //     label: Some("zoom bind group layout"),
+        //     entries: &[wgpu::BindGroupLayoutEntry {
+        //         binding: 0,
+        //         visibility: wgpu::ShaderStages::VERTEX,
+        //         ty: wgpu::BindingType::Buffer {
+        //             ty: wgpu::BufferBindingType::Uniform,
+        //             has_dynamic_offset: false,
+        //             min_binding_size: None,
+        //         },
+        //         count: None,
+        //     }],
+        // });
+
+        // let zoom_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        //     label: Some("zoom bind group"),
+        //     layout: &zoom_bind_group_layout,
+        //     entries: &[wgpu::BindGroupEntry {
+        //         binding: 0,
+        //         resource: zoom_buffer.as_entire_binding(),
+        //     }],
+        // });
+
+        let camera = camera::Camera::new(0.0, 0.0, 1.0);
+
+        let matrix = camera.to_matrix();
+        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("camera buffer"),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            contents: bytemuck::cast_slice(&[zoom]),
+            contents: bytemuck::cast_slice(&matrix),
         });
 
-        let zoom_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let camera_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("zoom bind group layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -130,12 +169,12 @@ impl<'a> State<'a> {
             }],
         });
 
-        let zoom_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("zoom bind group"),
-            layout: &zoom_bind_group_layout,
+        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("camera bind group"),
+            layout: &camera_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: zoom_buffer.as_entire_binding(),
+                resource: camera_buffer.as_entire_binding(),
             }],
         });
 
@@ -144,7 +183,7 @@ impl<'a> State<'a> {
             source: wgpu::ShaderSource::Wgsl(include_str!("assets/line.wgsl").into()),
         });
 
-        let render_pipeline = Pipeline::new(&device, &config, &shader, &zoom_bind_group_layout).render_pipeline;
+        let render_pipeline = Pipeline::new(&device, &config, &shader, &camera_bind_group_layout).render_pipeline;
 
         let vertices = Vec::new();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -161,6 +200,8 @@ impl<'a> State<'a> {
             window,       // winit Window
         );
 
+        let dragging = false;
+        
         Self {
             window,
             queue,
@@ -175,10 +216,13 @@ impl<'a> State<'a> {
             drawing_state: DrawingState::Idle,
             mode: Mode::Normal,
             cursor_position: None,
-            zoom,
-            zoom_buffer,
-            zoom_bind_group,
             egui,
+            camera,
+            camera_buffer,
+            camera_bind_group,
+            dragging,
+            last_mouse_x: 0.0,
+            last_mouse_y: 0.0,
         }
     }
 

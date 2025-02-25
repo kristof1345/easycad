@@ -37,6 +37,41 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
             true
         }
+
+        WindowEvent::MouseInput {
+            state: ElementState::Pressed,
+            button: MouseButton::Middle,
+            ..
+        } => {
+            state.dragging = true; // Start panning
+            true
+        }
+        WindowEvent::MouseInput {
+            state: ElementState::Released,
+            button: MouseButton::Middle,
+            ..
+        } => {
+            state.dragging = false; // Stop panning
+            true
+        }
+
+        // Pan when mouse moves while dragging
+        WindowEvent::CursorMoved { position, .. } if state.dragging => {
+            let dx = (position.x as f32 - state.last_mouse_x) / state.config.width as f32 * 2.0;
+            let dy = (position.y as f32 - state.last_mouse_y) / state.config.height as f32 * 2.0;
+            state.camera.pan(dx, -dy);
+
+            state.queue.write_buffer(
+                &state.camera_buffer,
+                0,
+                bytemuck::cast_slice(&state.camera.to_matrix()),
+            );
+
+            state.last_mouse_x = position.x as f32;
+            state.last_mouse_y = position.y as f32;
+            true
+        }
+
         WindowEvent::CursorMoved { position, .. } => {
             let x = (2.0 * position.x as f32 / state.size.width as f32) - 1.0;
             let y = 1.0 - (2.0 * position.y as f32 / state.size.height as f32);
@@ -78,17 +113,19 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             let zoom_speed = 0.1;
             match delta {
                 MouseScrollDelta::LineDelta(_, y) => {
-                    state.zoom *= 1.0 + zoom_speed * y.signum();
+                    state.camera.zoom(1.0 + zoom_speed * y.signum());
                 }
                 MouseScrollDelta::PixelDelta(pos) => {
-                    state.zoom *= 1.0 + zoom_speed * pos.y.signum() as f32;
+                    state.camera.zoom(1.0 + zoom_speed * pos.y.signum() as f32);
                 }
             }
 
-            state.zoom = state.zoom.clamp(0.1, 10.0);
-            state
-                .queue
-                .write_buffer(&state.zoom_buffer, 0, bytemuck::cast_slice(&[state.zoom]));
+            // state.zoom = state.zoom.clamp(0.1, 10.0);
+            state.queue.write_buffer(
+                &state.camera_buffer,
+                0,
+                bytemuck::cast_slice(&state.camera.to_matrix()),
+            );
 
             true
         }

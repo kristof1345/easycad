@@ -40,7 +40,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
 
         render_pass.set_pipeline(&state.render_pipeline);
         render_pass.set_vertex_buffer(0, state.vertex_buffer.slice(..));
-        render_pass.set_bind_group(0, &state.zoom_bind_group, &[]);
+        render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
         render_pass.draw(0..state.num_vertices, 0..1);
     }
 
