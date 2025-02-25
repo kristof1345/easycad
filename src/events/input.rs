@@ -44,6 +44,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             ..
         } => {
             state.dragging = true; // Start panning
+            println!("panning");
             true
         }
         WindowEvent::MouseInput {
@@ -52,35 +53,51 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             ..
         } => {
             state.dragging = false; // Stop panning
+            println!("stopped panning");
             true
         }
 
         // Pan when mouse moves while dragging
         WindowEvent::CursorMoved { position, .. } if state.dragging => {
-            let dx = (position.x as f32 - state.last_mouse_x) / state.config.width as f32 * 2.0;
-            let dy = (position.y as f32 - state.last_mouse_y) / state.config.height as f32 * 2.0;
-            state.camera.pan(dx, -dy);
+            let dx = position.x as f32 - state.last_mouse_x; // Raw pixel movement
+            let dy = position.y as f32 - state.last_mouse_y;
+            state.camera.pan(-dx, dy);
 
-            state.queue.write_buffer(
-                &state.camera_buffer,
-                0,
-                bytemuck::cast_slice(&state.camera.to_matrix()),
-            );
+            let uniform = state
+                .camera
+                .to_uniform(state.config.width as f32, state.config.height as f32);
+
+            state
+                .queue
+                .write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[uniform]));
 
             state.last_mouse_x = position.x as f32;
             state.last_mouse_y = position.y as f32;
+            state.window.request_redraw();
             true
         }
 
         WindowEvent::CursorMoved { position, .. } => {
-            let x = (2.0 * position.x as f32 / state.size.width as f32) - 1.0;
-            let y = 1.0 - (2.0 * position.y as f32 / state.size.height as f32);
-            state.cursor_position = Some([x, y]);
+            let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
+            let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
+
+            let zoom = state.camera.zoom;
+            let pan_x = state.camera.x_offset;
+            let pan_y = state.camera.y_offset;
+
+            let world_x = cen_x / zoom - pan_x;
+            let world_y = cen_y / zoom - pan_y;
+
+            println!(
+                "Pixel: [{}, {}], World: [{}, {}]",
+                position.x, position.y, world_x, world_y
+            );
+
+            state.cursor_position = Some([world_x, world_y]);
 
             if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state {
-                state.update_line([x, y]);
+                state.update_line([world_x, world_y]);
             }
-
             true
         }
         WindowEvent::MouseInput {
@@ -120,12 +137,13 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 }
             }
 
-            // state.zoom = state.zoom.clamp(0.1, 10.0);
-            state.queue.write_buffer(
-                &state.camera_buffer,
-                0,
-                bytemuck::cast_slice(&state.camera.to_matrix()),
-            );
+            let uniform = state
+                .camera
+                .to_uniform(state.config.width as f32, state.config.height as f32);
+
+            state
+                .queue
+                .write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[uniform]));
 
             true
         }

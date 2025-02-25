@@ -44,14 +44,11 @@ struct State<'a> {
     config: wgpu::SurfaceConfiguration,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
-    // zoom_buffer: wgpu::Buffer,
     vertices: Vec<Vertex>,
     num_vertices: u32,
     drawing_state: DrawingState,
     mode: Mode,
     cursor_position: Option<[f32; 2]>,
-    // zoom: f32,
-    // zoom_bind_group: wgpu::BindGroup,
     egui: EguiRenderer,
     camera: camera::Camera,
     camera_buffer: wgpu::Buffer,
@@ -115,44 +112,14 @@ impl<'a> State<'a> {
 
         surface.configure(&device, &config);
 
-        // let zoom: f32 = 1.0;
-
-        // let zoom_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("zoom buffer"),
-        //     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        //     contents: bytemuck::cast_slice(&[zoom]),
-        // });
-
-        // let zoom_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        //     label: Some("zoom bind group layout"),
-        //     entries: &[wgpu::BindGroupLayoutEntry {
-        //         binding: 0,
-        //         visibility: wgpu::ShaderStages::VERTEX,
-        //         ty: wgpu::BindingType::Buffer {
-        //             ty: wgpu::BufferBindingType::Uniform,
-        //             has_dynamic_offset: false,
-        //             min_binding_size: None,
-        //         },
-        //         count: None,
-        //     }],
-        // });
-
-        // let zoom_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        //     label: Some("zoom bind group"),
-        //     layout: &zoom_bind_group_layout,
-        //     entries: &[wgpu::BindGroupEntry {
-        //         binding: 0,
-        //         resource: zoom_buffer.as_entire_binding(),
-        //     }],
-        // });
-
         let camera = camera::Camera::new(0.0, 0.0, 1.0);
 
-        let matrix = camera.to_matrix();
+        // let matrix = camera.to_matrix();
+        let uniform = camera.to_uniform(config.width as f32, config.height as f32);
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("camera buffer"),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            contents: bytemuck::cast_slice(&matrix),
+            contents: bytemuck::cast_slice(&[uniform]),
         });
 
         let camera_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
