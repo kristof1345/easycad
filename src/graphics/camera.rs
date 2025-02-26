@@ -9,7 +9,7 @@ pub struct Camera {
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
 pub struct CameraUniform {
-    matrix: [[f32; 4]; 3], // 48 bytes
+    matrix: [[f32; 4]; 4], // 48 bytes
     window_size: [f32; 2], // 8 bytes
     _padding: [f32; 2],    // 8 bytes, total 64 bytes for alignment
 }
@@ -23,20 +23,18 @@ impl Camera {
         }
     }
 
-    pub fn to_matrix(&self) -> [[f32; 4]; 3] {
-        [
-            [self.zoom, 0.0, -self.x_offset, 0.0],
-            [0.0, self.zoom, -self.y_offset, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-        ]
-    }
-
     pub fn to_uniform(&self, window_width: f32, window_height: f32) -> CameraUniform {
         CameraUniform {
             matrix: [
-                [self.zoom, 0.0, self.x_offset, 0.0],
-                [0.0, self.zoom, self.y_offset, 0.0],
+                [self.zoom, 0.0, 0.0, 0.0],
+                [0.0, self.zoom, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
+                [
+                    -self.x_offset * self.zoom,
+                    -self.y_offset * self.zoom,
+                    0.0,
+                    1.0,
+                ],
             ],
             window_size: [window_width, window_height],
             _padding: [0.0, 0.0],

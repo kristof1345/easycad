@@ -20,6 +20,7 @@ use egui_winit::winit::{
     event_loop::{EventLoop, ControlFlow},
     window::{Window, WindowBuilder},
 };
+use winit::keyboard::ModifiersState;
 use winit::window::CursorIcon;
 use egui_winit::winit;
 
@@ -56,6 +57,8 @@ struct State<'a> {
     dragging: bool,
     last_mouse_x: f32,
     last_mouse_y: f32,
+    is_touchpad_panning: bool,
+    modifiers: ModifiersState,
 }
 
 impl<'a> State<'a> {
@@ -190,6 +193,8 @@ impl<'a> State<'a> {
             dragging,
             last_mouse_x: 0.0,
             last_mouse_y: 0.0,
+            is_touchpad_panning: false,
+            modifiers: ModifiersState::empty(),
         }
     }
 
@@ -236,6 +241,25 @@ pub async fn run() {
     event_loop.set_control_flow(ControlFlow::Poll);
 
     let mut state = State::new(&window).await;
+
+    
+state.vertices.push(Vertex {
+            position: [
+                -100.0,
+                -100.0,
+                0.0,
+            ],
+            color: [1.0, 1.0, 1.0],
+        });
+        state.vertices.push(Vertex {
+            position: [
+                100.0,
+                100.0,
+                0.0,
+            ],
+            color: [1.0, 1.0, 1.0],
+        });
+        state.update_vertex_buffer();
 
     event_loop
         .run(move |event, control_flow| {

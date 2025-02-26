@@ -1,15 +1,19 @@
 use crate::model::line::LineOps;
-use crate::DrawingState; // Import the enum if it's in another module
+use crate::DrawingState;
 use crate::Mode;
 use crate::State;
 use winit::event::KeyEvent;
-// Import your struct
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::keyboard::KeyCode;
 use winit::keyboard::PhysicalKey;
 
 pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
     match event {
+        WindowEvent::ModifiersChanged(modifiers) => {
+            state.modifiers = modifiers.state();
+            false
+        }
+
         WindowEvent::KeyboardInput {
             event:
                 KeyEvent {
@@ -43,37 +47,80 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             button: MouseButton::Middle,
             ..
         } => {
-            state.dragging = true; // Start panning
+            state.dragging = true;
             println!("panning");
             true
         }
+
         WindowEvent::MouseInput {
             state: ElementState::Released,
             button: MouseButton::Middle,
             ..
         } => {
-            state.dragging = false; // Stop panning
+            state.dragging = false;
             println!("stopped panning");
             true
         }
 
-        // Pan when mouse moves while dragging
+        // TODO: Impelement Touch for touchpad panning
         WindowEvent::CursorMoved { position, .. } if state.dragging => {
-            let dx = position.x as f32 - state.last_mouse_x; // Raw pixel movement
-            let dy = position.y as f32 - state.last_mouse_y;
-            state.camera.pan(-dx, dy);
+            if let Some(last_position) = state.cursor_position {
+                let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
+                let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
 
-            let uniform = state
-                .camera
-                .to_uniform(state.config.width as f32, state.config.height as f32);
+                let zoom = state.camera.zoom;
+                // let pan_x = state.camera.x_offset;
+                // let pan_y = state.camera.y_offset;
 
-            state
-                .queue
-                .write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[uniform]));
+                let world_x = cen_x / zoom;
+                let world_y = cen_y / zoom;
 
-            state.last_mouse_x = position.x as f32;
-            state.last_mouse_y = position.y as f32;
-            state.window.request_redraw();
+                let dx = world_x - last_position[0];
+                let dy = world_y - last_position[1];
+                state.camera.pan(-dx, -dy);
+
+                let uniform = state
+                    .camera
+                    .to_uniform(state.config.width as f32, state.config.height as f32);
+
+                state
+                    .queue
+                    .write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[uniform]));
+
+                state.window.request_redraw();
+                state.cursor_position = Some([world_x, world_y]);
+            }
+            true
+        }
+
+        // panning for touchpad
+        WindowEvent::CursorMoved { position, .. } if state.modifiers.control_key() => {
+            if let Some(last_position) = state.cursor_position {
+                let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
+                let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
+
+                let zoom = state.camera.zoom;
+                // let pan_x = state.camera.x_offset;
+                // let pan_y = state.camera.y_offset;
+
+                let world_x = cen_x / zoom;
+                let world_y = cen_y / zoom;
+
+                let dx = world_x - last_position[0];
+                let dy = world_y - last_position[1];
+                state.camera.pan(-dx, -dy);
+
+                let uniform = state
+                    .camera
+                    .to_uniform(state.config.width as f32, state.config.height as f32);
+
+                state
+                    .queue
+                    .write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[uniform]));
+
+                state.window.request_redraw();
+                state.cursor_position = Some([world_x, world_y]);
+            }
             true
         }
 
@@ -88,11 +135,6 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             let world_x = cen_x / zoom - pan_x;
             let world_y = cen_y / zoom - pan_y;
 
-            println!(
-                "Pixel: [{}, {}], World: [{}, {}]",
-                position.x, position.y, world_x, world_y
-            );
-
             state.cursor_position = Some([world_x, world_y]);
 
             if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state {
@@ -100,11 +142,12 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             }
             true
         }
+
         WindowEvent::MouseInput {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } => {
+        } if state.mode == Mode::DrawLine => {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
                     DrawingState::Idle => match state.mode {
@@ -126,6 +169,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             }
             true
         }
+
         WindowEvent::MouseWheel { delta, .. } => {
             let zoom_speed = 0.1;
             match delta {
