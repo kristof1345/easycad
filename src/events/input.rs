@@ -105,7 +105,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             let world_x = cen_x / zoom;
             let world_y = cen_y / zoom;
 
-            if let Some(last_position) = state.cursor_position {
+            if let Some(last_position) = state.last_position_for_pan {
                 println!(
                     "Last: {:?}; Current: {:?}",
                     last_position,
@@ -126,7 +126,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
                 state.window.request_redraw();
             }
-            state.cursor_position = Some([world_x, world_y]);
+            state.last_position_for_pan = Some([world_x, world_y]);
 
             true
         }
@@ -136,16 +136,20 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
 
             let zoom = state.camera.zoom;
-            // let pan_x = state.camera.x_offset;
-            // let pan_y = state.camera.y_offset;
+            let pan_x = state.camera.x_offset;
+            let pan_y = state.camera.y_offset;
 
             let world_x = cen_x / zoom;
             let world_y = cen_y / zoom;
 
-            state.cursor_position = Some([world_x, world_y]);
+            let world_x_pan = cen_x / zoom + pan_x;
+            let world_y_pan = cen_y / zoom + pan_y;
+
+            state.cursor_position = Some([world_x_pan, world_y_pan]);
+            state.last_position_for_pan = Some([world_x, world_y]);
 
             if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state {
-                state.update_line([world_x, world_y]);
+                state.update_line([world_x_pan, world_y_pan]);
             }
             true
         }

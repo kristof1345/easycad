@@ -50,14 +50,12 @@ struct State<'a> {
     drawing_state: DrawingState,
     mode: Mode,
     cursor_position: Option<[f32; 2]>,
+    last_position_for_pan: Option<[f32; 2]>,
     egui: EguiRenderer,
     camera: camera::Camera,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
     dragging: bool,
-    last_mouse_x: f32,
-    last_mouse_y: f32,
-    is_touchpad_panning: bool,
     modifiers: ModifiersState,
 }
 
@@ -186,14 +184,12 @@ impl<'a> State<'a> {
             drawing_state: DrawingState::Idle,
             mode: Mode::Normal,
             cursor_position: None,
+            last_position_for_pan: None,
             egui,
             camera,
             camera_buffer,
             camera_bind_group,
             dragging,
-            last_mouse_x: 0.0,
-            last_mouse_y: 0.0,
-            is_touchpad_panning: false,
             modifiers: ModifiersState::empty(),
         }
     }
