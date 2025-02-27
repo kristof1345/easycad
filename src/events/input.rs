@@ -95,16 +95,22 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
         // panning for touchpad
         WindowEvent::CursorMoved { position, .. } if state.modifiers.control_key() => {
+            let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
+            let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
+
+            let zoom = state.camera.zoom;
+            // let pan_x = state.camera.x_offset;
+            // let pan_y = state.camera.y_offset;
+
+            let world_x = cen_x / zoom;
+            let world_y = cen_y / zoom;
+
             if let Some(last_position) = state.cursor_position {
-                let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
-                let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
-
-                let zoom = state.camera.zoom;
-                // let pan_x = state.camera.x_offset;
-                // let pan_y = state.camera.y_offset;
-
-                let world_x = cen_x / zoom;
-                let world_y = cen_y / zoom;
+                println!(
+                    "Last: {:?}; Current: {:?}",
+                    last_position,
+                    [world_x, world_y]
+                );
 
                 let dx = world_x - last_position[0];
                 let dy = world_y - last_position[1];
@@ -119,8 +125,9 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     .write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[uniform]));
 
                 state.window.request_redraw();
-                state.cursor_position = Some([world_x, world_y]);
             }
+            state.cursor_position = Some([world_x, world_y]);
+
             true
         }
 
@@ -129,11 +136,11 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
 
             let zoom = state.camera.zoom;
-            let pan_x = state.camera.x_offset;
-            let pan_y = state.camera.y_offset;
+            // let pan_x = state.camera.x_offset;
+            // let pan_y = state.camera.y_offset;
 
-            let world_x = cen_x / zoom - pan_x;
-            let world_y = cen_y / zoom - pan_y;
+            let world_x = cen_x / zoom;
+            let world_y = cen_y / zoom;
 
             state.cursor_position = Some([world_x, world_y]);
 
