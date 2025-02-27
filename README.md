@@ -6,13 +6,13 @@ I created easycad mainly because I wanted to learn how CAD apps work. I make a l
 
 ## Features
 - [x] Line drawing
-- [] Deleting lines
-- [] Selecting lines
+- [ ] Deleting lines
+- [ ] Selecting lines
 - [x] Zooming
 - [x] Panning
-- [] Drawing circles
-- [] Save/Open
-- [] Export/Import
+- [ ] Drawing circles
+- [ ] Save/Open
+- [ ] Export/Import
 
 ## Installation
 ```bash
@@ -24,4 +24,14 @@ cargo run
 ```
 
 ## How to use
-### Drawing a line
+#### Drawing a line
+Press `l`, your cursor will change into a crosshair. Click a position on screen, drag your cursor to the next position and click again. You have a line. You can keep drawing lines until you press `esc`.
+#### Exiting a feature
+Just press `esc` and whatever you were doing will finish/exit.
+#### Zooming
+**Mouse**: Just scroll 
+**Touchpad**: Pinch
+#### Panning
+**Mouse**: Press the middle button on your mouse and move your mouse
+**Touchpad**: Press `ctrl`, now you can move your model with your finger on the touchpad.
+
