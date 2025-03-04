@@ -37,6 +37,17 @@ enum Mode {
     DrawCircle,
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct CircleUniform {
+    center: [f32; 2], // x, y position
+    radius: f32,      // Circle radius
+    _padding1: [u8; 4],
+    color: [f32; 3],  // RGB color
+    _padding2: [u8; 4],
+    segments: u32,    // Number of line segments
+} 
+
 struct State<'a> {
     window: &'a Window,
     device: wgpu::Device,
@@ -49,16 +60,19 @@ struct State<'a> {
     render_pipeline2: wgpu::RenderPipeline,
 
     vertex_buffer: wgpu::Buffer,
-    vertex_buffer_circle: wgpu::Buffer,
-    index_buffer_circle: wgpu::Buffer,
+    circle_buffer: wgpu::Buffer,
+    circle_uniform: CircleUniform,
+    circle_bind_group: wgpu::BindGroup,
+    // vertex_buffer_circle: wgpu::Buffer,
+    // index_buffer_circle: wgpu::Buffer,
 
     vertices: Vec<Vertex>,
-    circle_vertices: Vec<Vertex>,
-    circle_indices: Vec<u16>,
+    // circle_vertices: Vec<Vertex>,
+    // circle_indices: Vec<u16>,
 
     num_vertices: u32,
-    num_vertices_circle: u32,
-    num_indices_circle: u32,
+    // num_vertices_circle: u32,
+    // num_indices_circle: u32,
 
     drawing_state: DrawingState,
     mode: Mode,
@@ -163,13 +177,11 @@ impl<'a> State<'a> {
             label: Some("shader module"),
             source: wgpu::ShaderSource::Wgsl(include_str!("assets/line.wgsl").into()),
         });
-        let _circle_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let circle_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("shader module"),
             source: wgpu::ShaderSource::Wgsl(include_str!("assets/circle.wgsl").into()),
         });
 
-        let render_pipeline = Pipeline::new(&device, &config, &shader, &camera_bind_group_layout).render_pipeline;
-        let render_pipeline2 = Pipeline::new_circle_pipeline(&device, &config, &shader, &camera_bind_group_layout).render_pipeline;
 
         let vertices = Vec::new();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -178,21 +190,62 @@ impl<'a> State<'a> {
             contents: bytemuck::cast_slice(&vertices),
         });
 
-        let circle_vertices = Vec::new();
-        let circle_indices = Vec::new();
-        let vertex_buffer_circle = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("circle vertex buffer"),
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            contents: bytemuck::cast_slice(&circle_vertices),
+        // let circle_vertices = Vec::new();
+        // let circle_indices = Vec::new();
+        // let vertex_buffer_circle = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //     label: Some("circle vertex buffer"),
+        //     usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        //     contents: bytemuck::cast_slice(&circle_vertices),
+        // });
+
+        // let index_buffer_circle = device.create_buffer_init(
+        //     &wgpu::util::BufferInitDescriptor {
+        //         label: Some("Circle Index Buffer"),
+        //         contents: bytemuck::cast_slice(&circle_indices),
+        //         usage: wgpu::BufferUsages::INDEX,
+        //     }
+        // ); 
+
+        let circle_uniform = CircleUniform {
+            center: [0.5, 0.5],
+            radius: 0.5,
+            _padding1: [0; 4],
+            color: [1.0, 0.0, 0.0],
+            _padding2: [0; 4],
+            segments: 36,
+        };
+
+        let circle_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Circle uniform buffer"),
+            contents: bytemuck::cast_slice(&[circle_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
         });
 
-        let index_buffer_circle = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Circle Index Buffer"),
-                contents: bytemuck::cast_slice(&circle_indices),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        ); 
+        let circle_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Circle Bind Group Layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,                           // Binding 0 within group 1
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+        let circle_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Circle Bind Group"),
+            layout: &circle_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: circle_buffer.as_entire_binding(),
+            }],
+        }); 
+
+        let render_pipeline = Pipeline::new(&device, &config, &shader, &camera_bind_group_layout).render_pipeline;
+        let render_pipeline2 = Pipeline::new_circle_pipeline(&device, &config, &circle_shader, &camera_bind_group_layout, &circle_bind_group_layout).render_pipeline;
 
         let egui = EguiRenderer::new(
             &device,       // wgpu Device
@@ -216,16 +269,19 @@ impl<'a> State<'a> {
             render_pipeline2,
 
             vertex_buffer,
-            vertex_buffer_circle,
-            index_buffer_circle,
+            circle_uniform,
+            circle_buffer,
+            circle_bind_group,
+            // vertex_buffer_circle,
+            // index_buffer_circle,
 
             vertices,
-            circle_vertices,
-            circle_indices,
+            // circle_vertices,
+            // circle_indices,
 
             num_vertices: 0,
-            num_vertices_circle: 0,
-            num_indices_circle: 0,
+            // num_vertices_circle: 0,
+            // num_indices_circle: 0,
 
             drawing_state: DrawingState::Idle,
             mode: Mode::Normal,
@@ -264,48 +320,48 @@ impl<'a> State<'a> {
         self.num_vertices = self.vertices.len() as u32;
     }
 
-    pub fn update_vertex_buffer_circle(&mut self) {
-        self.vertex_buffer_circle = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("vertex buffer circle"),
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            contents: bytemuck::cast_slice(&self.circle_vertices),
-        });
-        self.num_vertices_circle = self.circle_vertices.len() as u32;
+    // pub fn update_vertex_buffer_circle(&mut self) {
+    //     self.vertex_buffer_circle = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    //         label: Some("vertex buffer circle"),
+    //         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+    //         contents: bytemuck::cast_slice(&self.circle_vertices),
+    //     });
+    //     self.num_vertices_circle = self.circle_vertices.len() as u32;
 
-        self.index_buffer_circle = self.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-            label: Some("circle index buffer"),
-            contents: bytemuck::cast_slice(&self.circle_indices),
-            usage: wgpu::BufferUsages::INDEX,
-        });
-        self.num_indices_circle = self.circle_indices.len() as u32;
-    }
+    //     self.index_buffer_circle = self.device.create_buffer_init(
+    //         &wgpu::util::BufferInitDescriptor {
+    //         label: Some("circle index buffer"),
+    //         contents: bytemuck::cast_slice(&self.circle_indices),
+    //         usage: wgpu::BufferUsages::INDEX,
+    //     });
+    //     self.num_indices_circle = self.circle_indices.len() as u32;
+    // }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
         self.window().request_redraw();
         input::handle_input(self, event)
     }
 
-    pub fn draw_circle(&mut self, cx: f32, cy: f32, radius: f32, color: [f32; 3], n: u32) {
-        for i in 0..n {
-            let theta = 2.0 * std::f32::consts::PI * (i as f32) / (n as f32);
-            let x = cx + radius * theta.cos();
-            let y = cy + radius * theta.sin();
-            self.circle_vertices.push(
-                Vertex {
-                    position: [x, y, 0.0],
-                    color,
-                }
-            );
-        }
+    // pub fn draw_circle(&mut self, cx: f32, cy: f32, radius: f32, color: [f32; 3], n: u32) {
+    //     for i in 0..n {
+    //         let theta = 2.0 * std::f32::consts::PI * (i as f32) / (n as f32);
+    //         let x = cx + radius * theta.cos();
+    //         let y = cy + radius * theta.sin();
+    //         self.circle_vertices.push(
+    //             Vertex {
+    //                 position: [x, y, 0.0],
+    //                 color,
+    //             }
+    //         );
+    //     }
 
-        for i in 0..n {
-            self.circle_indices.push(i as u16);
-            self.circle_indices.push(((i + 1) % n) as u16);
-        }
+    //     for i in 0..n {
+    //         self.circle_indices.push(i as u16);
+    //         self.circle_indices.push(((i + 1) % n) as u16);
+    //     }
 
-        self.update_vertex_buffer_circle();
-    }
+    //     self.update_vertex_buffer_circle();
+    // }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         renderer::render(self)
@@ -380,7 +436,7 @@ pub async fn run() {
 
     // state.update_vertex_buffer_circle();
 
-    state.draw_circle(0.0, 0.0, 100.0, [0.0, 1.0, 0.0], 36);
+    // state.draw_circle(0.0, 0.0, 100.0, [0.0, 1.0, 0.0], 36);
 
     event_loop
         .run(move |event, control_flow| {
