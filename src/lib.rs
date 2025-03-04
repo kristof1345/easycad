@@ -207,8 +207,8 @@ impl<'a> State<'a> {
         // ); 
 
         let circle_uniform = CircleUniform {
-            center: [0.5, 0.5],
-            radius: 0.5,
+            center: [0.0, 0.0],
+            radius: 50.0,
             _padding1: [0; 4],
             color: [1.0, 0.0, 0.0],
             _padding2: [0; 4],
@@ -437,6 +437,8 @@ pub async fn run() {
     // state.update_vertex_buffer_circle();
 
     // state.draw_circle(0.0, 0.0, 100.0, [0.0, 1.0, 0.0], 36);
+
+    println!("Circle: {:?}", state.circle_uniform);
 
     event_loop
         .run(move |event, control_flow| {

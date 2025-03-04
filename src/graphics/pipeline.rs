@@ -95,11 +95,11 @@ impl Pipeline {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::LineStrip,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                unclipped_depth: false,
-                conservative: false,
-                polygon_mode: wgpu::PolygonMode::Fill,
+                ..Default::default() // front_face: wgpu::FrontFace::Ccw,
+                                     // cull_mode: Some(wgpu::Face::Back),
+                                     // unclipped_depth: false,
+                                     // conservative: false,
+                                     // polygon_mode: wgpu::PolygonMode::Fill,
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState {

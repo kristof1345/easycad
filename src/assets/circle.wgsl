@@ -20,17 +20,29 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
-    let angle = 2.0 * 3.1415926535 * f32(vertex_index) / f32(circle.segments);
-    let x = circle.center.x + circle.radius * cos(angle);
-    let y = circle.center.y + circle.radius * sin(angle);
-    let world_pos = vec4<f32>(x, y, 0.0, 1.0);
+    // let angle = 2.0 * 3.1415926535 * f32(vertex_index) / f32(circle.segments);
+    // let x = circle.center.x + circle.radius * cos(angle);
+    // let y = circle.center.y + circle.radius * sin(angle);
+    // let world_pos = vec4<f32>(x, y, 0.0, 1.0);
 
-    let transformed_pos = camera.matrix * world_pos;
-    let clip_x = transformed_pos.x / (camera.window_size.x * 0.5);
-    let clip_y = transformed_pos.y / (camera.window_size.y * 0.5);
+    // let transformed_pos = camera.matrix * world_pos;
+    // let clip_x = transformed_pos.x / (camera.window_size.x * 0.5);
+    // let clip_y = transformed_pos.y / (camera.window_size.y * 0.5);
+
+    // var out: VertexOutput;
+    // out.clip_position = vec4<f32>(clip_x, clip_y, 0.0, 1.0);
+    // out.color = circle.color;
+    // return out;
+    
+    let angle = 2.0 * 3.1415926535 * f32(vertex_index) / f32(circle.segments);
+    let x = 0.0 + 0.5 * cos(angle);
+    let y = 0.0 + 0.5 * sin(angle);
+    // Direct clip space test (center at [0, 0], radius 0.5)
+    // let clip_x = 0.0 + 0.5 * cos(angle);
+    // let clip_y = 0.0 + 0.5 * sin(angle);
 
     var out: VertexOutput;
-    out.clip_position = vec4<f32>(clip_x, clip_y, 0.0, 1.0);
+    out.clip_position = vec4<f32>(x, y, 0.0, 1.0);
     out.color = circle.color;
     return out;
 }

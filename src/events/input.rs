@@ -6,6 +6,7 @@ use winit::event::KeyEvent;
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::keyboard::KeyCode;
 use winit::keyboard::PhysicalKey;
+use winit::window::CursorIcon;
 
 pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
     match event {
@@ -42,9 +43,10 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             // state.drawing_state = DrawingState::Idle;
                             // state.mode = Mode::Normal;
                         }
-                    } else if state.mode == Mode::DrawCircle {
-                        state.mode = Mode::Normal;
                     }
+                    state.mode = Mode::Normal;
+                    state.drawing_state = DrawingState::Idle;
+                    println!("{:?}", state.mode);
                 }
                 _ => {}
             }
