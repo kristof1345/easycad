@@ -1,9 +1,10 @@
 use crate::graphics::vertex::Vertex;
-use crate::State;
+use crate::{DrawingState, Mode, State};
 
 pub trait LineOps {
     fn add_line(&mut self, start: [f32; 2], end: [f32; 2]);
     fn update_line(&mut self, position: [f32; 2]);
+    fn cancel_drawing_line(&mut self);
 }
 
 // add offsets
@@ -28,6 +29,14 @@ impl<'a> LineOps for State<'a> {
             position: [world_x, world_y, 0.0],
             color: [1.0, 1.0, 1.0],
         };
+        self.update_vertex_buffer();
+    }
+
+    fn cancel_drawing_line(&mut self) {
+        self.vertices.pop();
+        self.vertices.pop();
+        self.drawing_state = DrawingState::Idle;
+        self.mode = Mode::Normal;
         self.update_vertex_buffer();
     }
 }

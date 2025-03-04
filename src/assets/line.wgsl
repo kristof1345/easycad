@@ -17,17 +17,6 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(model: VertexInput) -> VertexOutput {
-    // var out: VertexOutput;
-    // out.color = model.color;
-
-    // let transformed_pos = camera.matrix * vec3<f32>(model.position.xy, 1.0);
-       
-    // let clip_x = transformed_pos.x / (camera.window_size.x * 0.5);
-    // let clip_y = transformed_pos.y / (camera.window_size.y * 0.5);    
-   
-    // out.clip_position = vec4<f32>(clip_x, clip_y, model.position.z, 1.0);
-    // return out;
-    
     var out: VertexOutput;
     out.color = model.color;
 
@@ -42,6 +31,6 @@ fn vs_main(model: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // return vec4<f32>(in.color, 1.0);
-    return vec4<f32>(in.clip_position.xy * 0.5 + 0.5, 0.0, 1.0);
+    return vec4<f32>(in.color, 1.0);
+    // return vec4<f32>(in.clip_position.xy * 0.5 + 0.5, 0.0, 1.0);
 }

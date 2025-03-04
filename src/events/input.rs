@@ -27,13 +27,23 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 KeyCode::KeyL => {
                     if state.mode == Mode::Normal {
                         state.mode = Mode::DrawLine;
-                        // state.window.set_cursor_icon(CursorIcon::Crosshair);
+                    }
+                }
+                KeyCode::KeyC => {
+                    if state.mode == Mode::Normal {
+                        state.mode = Mode::DrawCircle;
                     }
                 }
                 KeyCode::Escape => {
-                    if !(state.mode == Mode::Normal) {
+                    if state.mode == Mode::DrawLine {
+                        if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state
+                        {
+                            state.cancel_drawing_line();
+                            // state.drawing_state = DrawingState::Idle;
+                            // state.mode = Mode::Normal;
+                        }
+                    } else if state.mode == Mode::DrawCircle {
                         state.mode = Mode::Normal;
-                        // state.window.set_cursor_icon(CursorIcon::Default);
                     }
                 }
                 _ => {}
@@ -62,56 +72,17 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             true
         }
 
-        // TODO: Impelement Touch for touchpad panning
-        WindowEvent::CursorMoved { position, .. } if state.dragging => {
-            if let Some(last_position) = state.cursor_position {
-                let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
-                let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
-
-                let zoom = state.camera.zoom;
-                // let pan_x = state.camera.x_offset;
-                // let pan_y = state.camera.y_offset;
-
-                let world_x = cen_x / zoom;
-                let world_y = cen_y / zoom;
-
-                let dx = world_x - last_position[0];
-                let dy = world_y - last_position[1];
-                state.camera.pan(-dx, -dy);
-
-                let uniform = state
-                    .camera
-                    .to_uniform(state.config.width as f32, state.config.height as f32);
-
-                state
-                    .queue
-                    .write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[uniform]));
-
-                state.window.request_redraw();
-                state.cursor_position = Some([world_x, world_y]);
-            }
-            true
-        }
-
-        // panning for touchpad
-        WindowEvent::CursorMoved { position, .. } if state.modifiers.control_key() => {
+        WindowEvent::CursorMoved { position, .. }
+            if state.dragging || state.modifiers.control_key() =>
+        {
             let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
             let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
 
             let zoom = state.camera.zoom;
-            // let pan_x = state.camera.x_offset;
-            // let pan_y = state.camera.y_offset;
-
             let world_x = cen_x / zoom;
             let world_y = cen_y / zoom;
 
             if let Some(last_position) = state.last_position_for_pan {
-                println!(
-                    "Last: {:?}; Current: {:?}",
-                    last_position,
-                    [world_x, world_y]
-                );
-
                 let dx = world_x - last_position[0];
                 let dy = world_y - last_position[1];
                 state.camera.pan(-dx, -dy);
@@ -138,10 +109,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             let zoom = state.camera.zoom;
             let pan_x = state.camera.x_offset;
             let pan_y = state.camera.y_offset;
-
             let world_x = cen_x / zoom;
             let world_y = cen_y / zoom;
-
             let world_x_pan = cen_x / zoom + pan_x;
             let world_y_pan = cen_y / zoom + pan_y;
 
@@ -171,11 +140,38 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     DrawingState::WaitingForSecondPoint(_start_pos) => match state.mode {
                         Mode::DrawLine => {
                             state.update_line(position);
-                            // println!("{:#?}", state.vertices);
                             state.drawing_state = DrawingState::Idle;
                         }
                         _ => {}
                     },
+                }
+            }
+            true
+        }
+
+        WindowEvent::MouseInput {
+            state: ElementState::Pressed,
+            button: MouseButton::Left,
+            ..
+        } if state.mode == Mode::Normal => {
+            if let Some(position) = state.cursor_position {
+                let mut update: bool = false;
+                for vertex in state.vertices.chunks_exact_mut(2) {
+                    let a = vertex[0].position;
+                    let b = vertex[1].position;
+
+                    let product =
+                        (b[0] - a[0]) * (position[1] - a[1]) - (b[1] - a[1]) * (position[0] - a[0]);
+
+                    if product.abs() < 850.0 {
+                        vertex[0].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
+                        vertex[1].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
+                        update = true;
+                    }
+                }
+
+                if update {
+                    state.update_vertex_buffer();
                 }
             }
             true
