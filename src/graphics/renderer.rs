@@ -12,22 +12,6 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         .texture
         .create_view(&wgpu::TextureViewDescriptor::default());
 
-    // let circle_uniform = CircleUniform {
-    //     center: [0.0, 0.0], // Update as needed
-    //     radius: 50.0,
-    //     _padding1: [0; 4],
-    //     color: [1.0, 0.0, 0.0],
-    //     _padding2: [0; 4],
-    //     segments: 36,
-    // };
-
-    // // Write the updated circle data to the buffer
-    // state.queue.write_buffer(
-    //     &state.circle_buffer,
-    //     0,
-    //     bytemuck::cast_slice(&[circle_uniform]),
-    // );
-
     let mut encoder = state
         .device
         .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -60,10 +44,22 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
         render_pass.draw(0..state.num_vertices, 0..1);
 
-        render_pass.set_pipeline(&state.render_pipeline2);
-        render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
-        render_pass.set_bind_group(1, &state.circle_bind_group, &[]);
-        render_pass.draw(0..(state.circle_uniform.segments + 1), 0..1);
+        // render_pass.set_pipeline(&state.render_pipeline2);
+        // render_pass.set_bind_group(0, &state.circle_bind_group, &[]);
+        // render_pass.set_vertex_buffer(0, state.vertex_buffer_circle.slice(..));
+        // // render_pass.set_bind_group(1, &state.circle_bind_group, &[]);
+
+        // for (i, circle) in state.circles.iter().enumerate() {
+        //     state.queue.write_buffer(
+        //         &state.circle_buffer,
+        //         0,
+        //         bytemuck::cast_slice(&[CircleUniform {
+        //             radius: circle.radius,
+        //         }]),
+        //     );
+        //     render_pass.draw(0..4, i as u32..(i as u32 + 1)); // 4 vertices per circle
+        // }
+        // render_pass.draw(0..(state.circle_uniform.segments + 1), 0..1);
     }
 
     let screen_descriptor = ScreenDescriptor {

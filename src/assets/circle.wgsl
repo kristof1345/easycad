@@ -1,50 +1,65 @@
-
-struct CameraUniform {
-    matrix: mat4x4<f32>,
-    window_size: vec2<f32>,
+struct VertexInput {
+    @location(0) position: vec3<f32>,
+    @location(1) color: vec3<f32>,
 };
-@group(0) @binding(0) var<uniform> camera: CameraUniform;
-
-struct CircleUniform {
-    center: vec2<f32>,
-    radius: f32,
-    color: vec3<f32>,
-    segments: u32,
-};
-@group(1) @binding(0) var<uniform> circle: CircleUniform;
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) color: vec3<f32>,
+    @location(1) position: vec2<f32>, // Pass world-space position to fragment
 };
 
+struct FragmentInput {
+    @location(0) color: vec3<f32>,
+    @location(1) position: vec2<f32>,
+};
+
+struct CircleUniform {
+    radius: f32,
+    // Add more if needed, e.g., screen resolution for scaling
+};
+
+@group(0) @binding(0)
+var<uniform> circle_uniform: CircleUniform;
+
 @vertex
-fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
-    // let angle = 2.0 * 3.1415926535 * f32(vertex_index) / f32(circle.segments);
-    // let x = circle.center.x + circle.radius * cos(angle);
-    // let y = circle.center.y + circle.radius * sin(angle);
-    // let world_pos = vec4<f32>(x, y, 0.0, 1.0);
-
-    // let transformed_pos = camera.matrix * world_pos;
-    // let clip_x = transformed_pos.x / (camera.window_size.x * 0.5);
-    // let clip_y = transformed_pos.y / (camera.window_size.y * 0.5);
-
-    // var out: VertexOutput;
-    // out.clip_position = vec4<f32>(clip_x, clip_y, 0.0, 1.0);
-    // out.color = circle.color;
-    // return out;
-    
-    let angle = 2.0 * 3.1415926535 * f32(vertex_index) / f32(circle.segments);
-    let x = 0.0 + 0.5 * cos(angle);
-    let y = 0.0 + 0.5 * sin(angle);
-
+fn vs_main(
+    model: VertexInput,
+    @builtin(vertex_index) vertex_index: u32,
+) -> VertexOutput {
     var out: VertexOutput;
-    out.clip_position = vec4<f32>(x, y, 0.0, 1.0);
-    out.color = circle.color;
+    out.color = model.color;
+
+    let size = circle_uniform.radius * 2.0; // Quad width/height = diameter
+
+    // Assign offset based on vertex_index (0, 1, 2, 3 for quad corners)
+    var offset: vec2<f32>;
+    if (vertex_index % 4u == 0u) {
+        offset = vec2<f32>(-size, -size); // Bottom-left
+    } else if (vertex_index % 4u == 1u) {
+        offset = vec2<f32>(size, -size);  // Bottom-right
+    } else if (vertex_index % 4u == 2u) {
+        offset = vec2<f32>(-size, size);  // Top-left
+    } else {
+        offset = vec2<f32>(size, size);   // Top-right
+    }
+
+    let world_pos = model.position.xy + offset;
+    out.position = world_pos; // Pass to fragment shader
+    out.clip_position = vec4<f32>(world_pos, model.position.z, 1.0);
     return out;
 }
 
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> {
+    // Distance from fragment to center (in.position is world-space)
+    let center = in.position - circle_uniform.radius; // Adjust based on vertex offset
+    let dist = length(in.position);
+
+    // Discard fragments outside the radius
+    if (dist > circle_uniform.radius) {
+        discard;
+    }
+
     return vec4<f32>(in.color, 1.0);
 }

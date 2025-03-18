@@ -6,7 +6,7 @@ pub struct Line {
     pub vertices: [Vertex; 2],
 }
 
-pub fn flatten(lines: &Vec<Line>) -> Vec<Vertex> {
+pub fn flatten_lines(lines: &Vec<Line>) -> Vec<Vertex> {
     let mut flat = Vec::new();
 
     for line in lines.iter() {
