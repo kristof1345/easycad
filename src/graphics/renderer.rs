@@ -1,4 +1,4 @@
-use crate::CircleUniform;
+// use crate::CircleUniform;
 use crate::State;
 use crate::GUI;
 use egui_wgpu::wgpu;
@@ -12,21 +12,21 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         .texture
         .create_view(&wgpu::TextureViewDescriptor::default());
 
-    let circle_uniform = CircleUniform {
-        center: [0.0, 0.0], // Update as needed
-        radius: 50.0,
-        _padding1: [0; 4],
-        color: [1.0, 0.0, 0.0],
-        _padding2: [0; 4],
-        segments: 36,
-    };
+    // let circle_uniform = CircleUniform {
+    //     center: [0.0, 0.0], // Update as needed
+    //     radius: 50.0,
+    //     _padding1: [0; 4],
+    //     color: [1.0, 0.0, 0.0],
+    //     _padding2: [0; 4],
+    //     segments: 36,
+    // };
 
-    // Write the updated circle data to the buffer
-    state.queue.write_buffer(
-        &state.circle_buffer,
-        0,
-        bytemuck::cast_slice(&[circle_uniform]),
-    );
+    // // Write the updated circle data to the buffer
+    // state.queue.write_buffer(
+    //     &state.circle_buffer,
+    //     0,
+    //     bytemuck::cast_slice(&[circle_uniform]),
+    // );
 
     let mut encoder = state
         .device

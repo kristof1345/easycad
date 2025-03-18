@@ -151,6 +151,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             true
         }
 
+        // TODO: Change vertices to lines
         WindowEvent::MouseInput {
             state: ElementState::Pressed,
             button: MouseButton::Left,
@@ -158,16 +159,16 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
         } if state.mode == Mode::Normal => {
             if let Some(position) = state.cursor_position {
                 let mut update: bool = false;
-                for vertex in state.vertices.chunks_exact_mut(2) {
-                    let a = vertex[0].position;
-                    let b = vertex[1].position;
+                for line in &mut state.lines {
+                    let a = line.vertices[0].position;
+                    let b = line.vertices[1].position;
 
                     let product =
                         (b[0] - a[0]) * (position[1] - a[1]) - (b[1] - a[1]) * (position[0] - a[0]);
 
                     if product.abs() < 850.0 {
-                        vertex[0].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
-                        vertex[1].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
+                        line.vertices[0].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
+                        line.vertices[1].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
                         update = true;
                     }
                 }

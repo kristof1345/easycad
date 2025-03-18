@@ -11,6 +11,8 @@ use graphics::gui_elements;
 use graphics::renderer;
 use graphics::camera;
 use events::input;
+use model::line::Line;
+use model::line::flatten;
 
 use gui::EguiRenderer;
 use gui_elements::GUI;
@@ -66,7 +68,8 @@ struct State<'a> {
     // vertex_buffer_circle: wgpu::Buffer,
     // index_buffer_circle: wgpu::Buffer,
 
-    vertices: Vec<Vertex>,
+    // vertices: Vec<Vertex>,
+    lines: Vec<Line>,
     // circle_vertices: Vec<Vertex>,
     // circle_indices: Vec<u16>,
 
@@ -183,28 +186,13 @@ impl<'a> State<'a> {
         });
 
 
-        let vertices = Vec::new();
+        // let vertices = Vec::new();
+        let lines = Vec::new();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("vertex buffer"),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            contents: bytemuck::cast_slice(&vertices),
+            contents: &[],
         });
-
-        // let circle_vertices = Vec::new();
-        // let circle_indices = Vec::new();
-        // let vertex_buffer_circle = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("circle vertex buffer"),
-        //     usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        //     contents: bytemuck::cast_slice(&circle_vertices),
-        // });
-
-        // let index_buffer_circle = device.create_buffer_init(
-        //     &wgpu::util::BufferInitDescriptor {
-        //         label: Some("Circle Index Buffer"),
-        //         contents: bytemuck::cast_slice(&circle_indices),
-        //         usage: wgpu::BufferUsages::INDEX,
-        //     }
-        // ); 
 
         let circle_uniform = CircleUniform {
             center: [0.0, 0.0],
@@ -275,7 +263,8 @@ impl<'a> State<'a> {
             // vertex_buffer_circle,
             // index_buffer_circle,
 
-            vertices,
+            // vertices,
+            lines,
             // circle_vertices,
             // circle_indices,
 
@@ -315,9 +304,10 @@ impl<'a> State<'a> {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("vertex buffer"),
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                contents: bytemuck::cast_slice(&self.vertices),
+                // contents: bytemuck::cast_slice(&self.vertices),
+                contents: bytemuck::cast_slice(&flatten(&self.lines)),
             });
-        self.num_vertices = self.vertices.len() as u32;
+        self.num_vertices = (self.lines.len() as u32) * 2;
     }
 
     // pub fn update_vertex_buffer_circle(&mut self) {
@@ -377,69 +367,67 @@ pub async fn run() {
 
     let mut state = State::new(&window).await;
     
-    state.vertices.push(Vertex {
-        position: [
-            0.0,
-            0.0,
-            0.0,
+    // state.vertices.push(Vertex {
+    //     position: [
+    //         0.0,
+    //         0.0,
+    //         0.0,
+    //     ],
+    //     color: [1.0, 1.0, 1.0],
+    // });
+    // state.vertices.push(Vertex {
+    //     position: [
+    //         0.0,
+    //         50.0,
+    //         0.0,
+    //     ],
+    //     color: [1.0, 1.0, 1.0],
+    // });
+    // state.vertices.push(Vertex {
+    //     position: [
+    //         50.0,
+    //         0.0,
+    //         0.0,
+    //     ],
+    //     color: [1.0, 1.0, 1.0],
+    // });
+    // state.vertices.push(Vertex {
+    //     position: [
+    //         0.0,
+    //         0.0,
+    //         0.0,
+    //     ],
+    //     color: [1.0, 1.0, 1.0],
+    // });
+    
+    state.lines.push(Line {
+        vertices: [
+            Vertex {
+                position: [50.0, 0.0, 0.0],
+                color: [1.0, 1.0, 1.0],
+            },
+            Vertex {
+                position: [0.0, 0.0, 0.0],
+                color: [1.0, 1.0, 1.0],
+            },
         ],
-        color: [1.0, 1.0, 1.0],
     });
-    state.vertices.push(Vertex {
-        position: [
-            0.0,
-            50.0,
-            0.0,
+    state.lines.push(Line {
+        vertices: [
+            Vertex {
+                position: [0.0, 0.0, 0.0],
+                color: [1.0, 1.0, 1.0],
+            },
+            Vertex {
+                position: [0.0, 50.0, 0.0],
+                color: [1.0, 1.0, 1.0],
+            },
         ],
-        color: [1.0, 1.0, 1.0],
     });
-    state.vertices.push(Vertex {
-        position: [
-            50.0,
-            0.0,
-            0.0,
-        ],
-        color: [1.0, 1.0, 1.0],
-    });
-    state.vertices.push(Vertex {
-        position: [
-            0.0,
-            0.0,
-            0.0,
-        ],
-        color: [1.0, 1.0, 1.0],
-    });
+
+    flatten(&state.lines);
 
     state.update_vertex_buffer();
-
-    // state.circle_vertices.push(Vertex {
-    //     position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5]
-    // });
-
-    // state.circle_vertices.push(Vertex {
-    //     position: [-0.49513406, 0.06958647, 0.0] ,color: [0.5, 0.0, 0.5]
-    // });
-
-    // state.circle_vertices.push(Vertex {
-    //     position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5]
-    // });
-
-    // state.circle_vertices.push(Vertex {
-    //     position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5]
-    // });
-
-    // state.circle_vertices.push(Vertex {
-    //     position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5]
-    // });
-
-    // state.circle_indices.extend([0, 1, 4, 1, 2, 4, 2, 3, 4,]);
-
-    // state.update_vertex_buffer_circle();
-
-    // state.draw_circle(0.0, 0.0, 100.0, [0.0, 1.0, 0.0], 36);
-
-    println!("Circle: {:?}", state.circle_uniform);
-
     event_loop
         .run(move |event, control_flow| {
             match event {
