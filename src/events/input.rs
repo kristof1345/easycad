@@ -1,7 +1,9 @@
+use crate::model::circle::CircleOps;
 use crate::model::line::LineOps;
 use crate::DrawingState;
 use crate::Mode;
 use crate::State;
+use wgpu::util::DrawIndexedIndirectArgs;
 use winit::event::KeyEvent;
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::keyboard::KeyCode;
@@ -122,6 +124,9 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state {
                 state.update_line([world_x_pan, world_y_pan]);
             }
+            if let DrawingState::WaitingForRadius(_start_pos) = state.drawing_state {
+                state.update_circle([world_x_pan, world_y_pan]);
+            }
             true
         }
 
@@ -129,7 +134,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if state.mode == Mode::DrawLine => {
+        } if state.mode == Mode::DrawLine || state.mode == Mode::DrawCircle => {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
                     DrawingState::Idle => match state.mode {
@@ -137,11 +142,23 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.drawing_state = DrawingState::WaitingForSecondPoint(position);
                             state.add_line(position, position);
                         }
+                        Mode::DrawCircle => {
+                            println!("fuck");
+                            state.drawing_state = DrawingState::WaitingForRadius(position);
+                            state.add_circle(position, 30.0, [1.0, 1.0, 1.0]);
+                        }
                         _ => {}
                     },
                     DrawingState::WaitingForSecondPoint(_start_pos) => match state.mode {
                         Mode::DrawLine => {
                             state.update_line(position);
+                            state.drawing_state = DrawingState::Idle;
+                        }
+                        _ => {}
+                    },
+                    DrawingState::WaitingForRadius(_start_pos) => match state.mode {
+                        Mode::DrawCircle => {
+                            state.update_circle(position);
                             state.drawing_state = DrawingState::Idle;
                         }
                         _ => {}

@@ -44,22 +44,10 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
         render_pass.draw(0..state.num_vertices, 0..1);
 
-        // render_pass.set_pipeline(&state.render_pipeline2);
-        // render_pass.set_bind_group(0, &state.circle_bind_group, &[]);
-        // render_pass.set_vertex_buffer(0, state.vertex_buffer_circle.slice(..));
-        // // render_pass.set_bind_group(1, &state.circle_bind_group, &[]);
-
-        // for (i, circle) in state.circles.iter().enumerate() {
-        //     state.queue.write_buffer(
-        //         &state.circle_buffer,
-        //         0,
-        //         bytemuck::cast_slice(&[CircleUniform {
-        //             radius: circle.radius,
-        //         }]),
-        //     );
-        //     render_pass.draw(0..4, i as u32..(i as u32 + 1)); // 4 vertices per circle
-        // }
-        // render_pass.draw(0..(state.circle_uniform.segments + 1), 0..1);
+        render_pass.set_pipeline(&state.render_pipeline2);
+        render_pass.set_vertex_buffer(0, state.vertex_buffer_circle.slice(..));
+        render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
+        render_pass.draw(0..state.num_vertices_circle, 0..1);
     }
 
     let screen_descriptor = ScreenDescriptor {
@@ -68,7 +56,6 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
     };
 
     let mode_flag = &mut state.mode;
-    // let mut gui_action = None;
 
     state.egui.draw(
         &state.device,

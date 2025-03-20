@@ -14,7 +14,6 @@ pub fn flatten_lines(lines: &Vec<Line>) -> Vec<Vertex> {
         flat.push(line.vertices[1]);
     }
 
-    println!("{:?}", flat);
     flat
 }
 

@@ -65,11 +65,11 @@ impl Pipeline {
         config: &SurfaceConfiguration,
         shader: &ShaderModule,
         camera_bind_group_layout: &BindGroupLayout,
-        circle_bind_group_layout: &BindGroupLayout,
+        // circle_bind_group_layout: &BindGroupLayout,
     ) -> Self {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Pipeline Layout"),
-            bind_group_layouts: &[&camera_bind_group_layout, circle_bind_group_layout],
+            bind_group_layouts: &[&camera_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -80,23 +80,7 @@ impl Pipeline {
                 module: shader,
                 entry_point: "vs_main",
                 // compilation_options: wgpu::PipelineCompilationOptions::default(),
-                buffers: &[],
-                // buffers: &[wgpu::VertexBufferLayout {
-                //             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-                //             step_mode: wgpu::VertexStepMode::Vertex,
-                //             attributes: &[
-                //                 wgpu::VertexAttribute {
-                //                     offset: 0,
-                //                     shader_location: 0,
-                //                     format: wgpu::VertexFormat::Float32x3, // position
-                //                 },
-                //                 wgpu::VertexAttribute {
-                //                     offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                //                     shader_location: 1,
-                //                     format: wgpu::VertexFormat::Float32x3, // color
-                //                 },
-                //             ],
-                //         }],
+                buffers: &[Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: shader,
