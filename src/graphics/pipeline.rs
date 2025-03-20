@@ -25,13 +25,11 @@ impl Pipeline {
             vertex: wgpu::VertexState {
                 module: shader,
                 entry_point: "vs_main",
-                // compilation_options: wgpu::PipelineCompilationOptions::default(),
                 buffers: &[Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: shader,
                 entry_point: "fs_main",
-                // compilation_options: wgpu::PipelineCompilationOptions::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -54,7 +52,6 @@ impl Pipeline {
                 alpha_to_coverage_enabled: false,
             },
             multiview: None,
-            // cache: None,
         });
 
         Self { render_pipeline }
@@ -65,7 +62,6 @@ impl Pipeline {
         config: &SurfaceConfiguration,
         shader: &ShaderModule,
         camera_bind_group_layout: &BindGroupLayout,
-        // circle_bind_group_layout: &BindGroupLayout,
     ) -> Self {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Pipeline Layout"),
@@ -79,13 +75,11 @@ impl Pipeline {
             vertex: wgpu::VertexState {
                 module: shader,
                 entry_point: "vs_main",
-                // compilation_options: wgpu::PipelineCompilationOptions::default(),
                 buffers: &[Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: shader,
                 entry_point: "fs_main",
-                // compilation_options: wgpu::PipelineCompilationOptions::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -93,13 +87,9 @@ impl Pipeline {
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::LineStrip,
+                topology: wgpu::PrimitiveTopology::LineList,
                 strip_index_format: None,
                 ..Default::default() // front_face: wgpu::FrontFace::Ccw,
-                                     // cull_mode: Some(wgpu::Face::Back),
-                                     // unclipped_depth: false,
-                                     // conservative: false,
-                                     // polygon_mode: wgpu::PolygonMode::Fill,
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState {
@@ -108,7 +98,6 @@ impl Pipeline {
                 alpha_to_coverage_enabled: false,
             },
             multiview: None,
-            // cache: None,
         });
 
         Self { render_pipeline }

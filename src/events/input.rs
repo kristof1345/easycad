@@ -3,12 +3,10 @@ use crate::model::line::LineOps;
 use crate::DrawingState;
 use crate::Mode;
 use crate::State;
-use wgpu::util::DrawIndexedIndirectArgs;
 use winit::event::KeyEvent;
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::keyboard::KeyCode;
 use winit::keyboard::PhysicalKey;
-use winit::window::CursorIcon;
 
 pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
     match event {
@@ -42,13 +40,16 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state
                         {
                             state.cancel_drawing_line();
-                            // state.drawing_state = DrawingState::Idle;
-                            // state.mode = Mode::Normal;
+                        }
+                    }
+
+                    if state.mode == Mode::DrawCircle {
+                        if let DrawingState::WaitingForRadius(_start_pos) = state.drawing_state {
+                            state.cancel_drawing_circle();
                         }
                     }
                     state.mode = Mode::Normal;
                     state.drawing_state = DrawingState::Idle;
-                    println!("{:?}", state.mode);
                 }
                 _ => {}
             }
@@ -62,7 +63,6 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             ..
         } => {
             state.dragging = true;
-            println!("panning");
             true
         }
 
@@ -72,7 +72,6 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             ..
         } => {
             state.dragging = false;
-            println!("stopped panning");
             true
         }
 
@@ -143,9 +142,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.add_line(position, position);
                         }
                         Mode::DrawCircle => {
-                            println!("fuck");
                             state.drawing_state = DrawingState::WaitingForRadius(position);
-                            state.add_circle(position, 30.0, [1.0, 1.0, 1.0]);
+                            state.add_circle(position, 0.0, [1.0, 1.0, 1.0]);
                         }
                         _ => {}
                     },
@@ -218,10 +216,6 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
             true
         }
-        // WindowEvent::PanGesture { delta, .. } => {
-        //     println!("heyho");
-        //     true
-        // }
         _ => false,
     }
 }

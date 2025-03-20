@@ -43,12 +43,6 @@ enum Mode {
     DrawCircle,
 }
 
-// #[repr(C)]
-// #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-// struct CircleUniform {
-//     radius: f32,      // Circle radius
-// }
-
 struct State<'a> {
     window: &'a Window,
     device: wgpu::Device,
@@ -62,12 +56,11 @@ struct State<'a> {
 
     vertex_buffer: wgpu::Buffer,
     vertex_buffer_circle: wgpu::Buffer,
-
-    // circle_uniform: CircleUniform,
-    // circle_bind_group: wgpu::BindGroup,
+    index_buffer_circle: wgpu::Buffer,
 
     lines: Vec<Line>,
     circles: Vec<Circle>,
+    circle_indices: Vec<u32>,
 
     num_vertices: u32,
     num_vertices_circle: u32,
@@ -196,38 +189,14 @@ impl<'a> State<'a> {
             contents: &[],
         });
 
-        // let circle_uniform = CircleUniform {
-        //     radius: 50.0,
-        // };
-
-        // let circle_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("Circle uniform buffer"),
-        //     contents: bytemuck::cast_slice(&[circle_uniform]),
-        //     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
-        // });
-
-        // let circle_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        //     label: Some("Circle Bind Group Layout"),
-        //     entries: &[wgpu::BindGroupLayoutEntry {
-        //         binding: 0,                           // Binding 0 within group 1
-        //         visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-        //         ty: wgpu::BindingType::Buffer {
-        //             ty: wgpu::BufferBindingType::Uniform,
-        //             has_dynamic_offset: false,
-        //             min_binding_size: None,
-        //         },
-        //         count: None,
-        //     }],
-        // });
-
-        // let circle_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        //     label: Some("Circle Bind Group"),
-        //     layout: &circle_bind_group_layout,
-        //     entries: &[wgpu::BindGroupEntry {
-        //         binding: 0,
-        //         resource: circle_buffer.as_entire_binding(),
-        //     }],
-        // }); 
+        let circle_indices = Vec::new();
+        let index_buffer_circle = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Circle index buffer"),
+                contents: bytemuck::cast_slice(&circle_indices),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
 
         let render_pipeline = Pipeline::new(&device, &config, &shader, &camera_bind_group_layout).render_pipeline;
         let render_pipeline2 = Pipeline::new_circle_pipeline(&device, &config, &circle_shader, &camera_bind_group_layout).render_pipeline;
@@ -255,9 +224,11 @@ impl<'a> State<'a> {
 
             vertex_buffer,
             vertex_buffer_circle,
+            circle_indices,
 
             lines,
             circles,
+            index_buffer_circle,
 
             num_vertices: 0,
             num_vertices_circle: 0,
@@ -307,51 +278,19 @@ impl<'a> State<'a> {
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 contents: bytemuck::cast_slice(&flatten_circles(&self.circles)),
             });
-        self.num_vertices_circle = (self.circles.len() as u32) * 37; // 37 because of the last closing vertex
+        self.num_vertices_circle = (self.circles.len() as u32) * 36; // 37 because of the last closing vertex
+
+        self.index_buffer_circle = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Circle Index Buffer"),
+            contents: bytemuck::cast_slice(&self.circle_indices),
+            usage: wgpu::BufferUsages::INDEX,
+        });
     }
-
-    // pub fn update_vertex_buffer_circle(&mut self) {
-    //     self.vertex_buffer_circle = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-    //         label: Some("vertex buffer circle"),
-    //         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-    //         contents: bytemuck::cast_slice(&self.circle_vertices),
-    //     });
-    //     self.num_vertices_circle = self.circle_vertices.len() as u32;
-
-    //     self.index_buffer_circle = self.device.create_buffer_init(
-    //         &wgpu::util::BufferInitDescriptor {
-    //         label: Some("circle index buffer"),
-    //         contents: bytemuck::cast_slice(&self.circle_indices),
-    //         usage: wgpu::BufferUsages::INDEX,
-    //     });
-    //     self.num_indices_circle = self.circle_indices.len() as u32;
-    // }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
         self.window().request_redraw();
         input::handle_input(self, event)
     }
-
-    // pub fn draw_circle(&mut self, cx: f32, cy: f32, radius: f32, color: [f32; 3], n: u32) {
-    //     for i in 0..n {
-    //         let theta = 2.0 * std::f32::consts::PI * (i as f32) / (n as f32);
-    //         let x = cx + radius * theta.cos();
-    //         let y = cy + radius * theta.sin();
-    //         self.circle_vertices.push(
-    //             Vertex {
-    //                 position: [x, y, 0.0],
-    //                 color,
-    //             }
-    //         );
-    //     }
-
-    //     for i in 0..n {
-    //         self.circle_indices.push(i as u16);
-    //         self.circle_indices.push(((i + 1) % n) as u16);
-    //     }
-
-    //     self.update_vertex_buffer_circle();
-    // }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         renderer::render(self)
@@ -392,16 +331,8 @@ pub async fn run() {
         ],
     });
 
-    // state.circles.push(Circle { radius: 20.0, center: Vertex { position: [0.0, 0.0, 0.0], color: [1.0, 1.0, 1.0] } });
-
-    // flatten_lines(&state.lines);
-    // flatten_circles(&state.circles);
-
-    state.add_circle([0.0, 0.0], 150.0, [1.0, 1.0, 1.0]);
-    println!("circles: {:?}", state.circles);
-    println!("");
-    println!("flat: {:?}", flatten_circles(&state.circles));
-    println!("");
+   // state.add_circle([0.0, 0.0], 60.0, [1.0, 1.0, 1.0]);
+   // state.add_circle([200.0, 30.0], 50.0, [1.0, 1.0, 1.0]);
 
     state.update_vertex_buffer();
     state.update_circle_vertex_buffer();
@@ -453,8 +384,6 @@ pub async fn run() {
                                     state.window.set_cursor_icon(CursorIcon::Crosshair);
                                 }
                             }
-
-                            // state.egui.handle_input(&mut state.window, &event);
                         }
                     }
                 }

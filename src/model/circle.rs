@@ -1,5 +1,4 @@
-use crate::State;
-use crate::Vertex;
+use crate::{DrawingState, Mode, State, Vertex};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Circle {
@@ -10,8 +9,10 @@ pub struct Circle {
 pub trait CircleOps {
     fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3]);
     fn update_circle(&mut self, position: [f32; 2]);
+    fn cancel_drawing_circle(&mut self);
 }
 
+// flatten vector of circles into flat vector of vertices
 pub fn flatten_circles(circles: &Vec<Circle>) -> Vec<Vertex> {
     let mut flat = Vec::new();
     let n = 36;
@@ -26,9 +27,6 @@ pub fn flatten_circles(circles: &Vec<Circle>) -> Vec<Vertex> {
                 color: circle.center.color,
             });
         }
-
-        // push the first element again to close the circle
-        flat.push(flat[flat.len() - n]);
     }
 
     flat
@@ -36,6 +34,12 @@ pub fn flatten_circles(circles: &Vec<Circle>) -> Vec<Vertex> {
 
 impl<'a> CircleOps for State<'a> {
     fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3]) {
+        let segments = 36;
+
+        let all_vertices = flatten_circles(&self.circles);
+
+        let base_index = all_vertices.len() as u32;
+
         self.circles.push({
             Circle {
                 center: Vertex {
@@ -46,7 +50,13 @@ impl<'a> CircleOps for State<'a> {
             }
         });
 
-        println!("Added circle, circles: {:?}", self.circles);
+        for i in 0..segments - 1 {
+            self.circle_indices.push(base_index + i);
+            self.circle_indices.push(base_index + i + 1);
+        }
+
+        self.circle_indices.push(base_index + segments - 1);
+        self.circle_indices.push(base_index);
 
         self.update_circle_vertex_buffer();
     }
@@ -56,14 +66,22 @@ impl<'a> CircleOps for State<'a> {
         let world_y = position[1];
 
         let length = self.circles.len();
-        let mut circle = self.circles[(length - 1) as usize];
+        let circle = self.circles[(length - 1) as usize];
         let center = circle.center;
 
         let dx = world_x - center.position[0];
         let dy = world_y - center.position[1];
 
-        circle.radius = (dx * dx + dy * dy).sqrt();
+        self.circles[(length - 1) as usize].radius = (dx * dx + dy * dy).sqrt();
 
-        self.update_vertex_buffer();
+        self.update_circle_vertex_buffer();
+    }
+
+    fn cancel_drawing_circle(&mut self) {
+        self.circles.pop();
+        self.circle_indices.truncate(self.circle_indices.len() - 72);
+        self.drawing_state = DrawingState::Idle;
+        self.mode = Mode::Normal;
+        self.update_circle_vertex_buffer();
     }
 }

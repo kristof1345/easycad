@@ -1,4 +1,3 @@
-// use crate::CircleUniform;
 use crate::State;
 use crate::GUI;
 use egui_wgpu::wgpu;
@@ -46,8 +45,13 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
 
         render_pass.set_pipeline(&state.render_pipeline2);
         render_pass.set_vertex_buffer(0, state.vertex_buffer_circle.slice(..));
+        render_pass.set_index_buffer(
+            state.index_buffer_circle.slice(..),
+            wgpu::IndexFormat::Uint32,
+        );
         render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
-        render_pass.draw(0..state.num_vertices_circle, 0..1);
+        // render_pass.draw(0..state.num_vertices_circle, 0..1);
+        render_pass.draw_indexed(0..state.circle_indices.len() as u32, 0, 0..1);
     }
 
     let screen_descriptor = ScreenDescriptor {
