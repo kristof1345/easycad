@@ -1,4 +1,5 @@
-use crate::{DrawingState, Mode, State, Vertex};
+use crate::graphics::vertex::Vertex;
+use crate::{DrawingState, Mode, State};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Circle {

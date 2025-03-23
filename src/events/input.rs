@@ -35,6 +35,26 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         state.mode = Mode::DrawCircle;
                     }
                 }
+                KeyCode::KeyS => {
+                    if state.modifiers.control_key() {
+                        let saved = state.save_to_dxf();
+
+                        match saved {
+                            Ok(_) => println!("file saved"),
+                            Err(error) => eprintln!("i/o error while saving file: {}", error),
+                        };
+                    }
+                }
+                KeyCode::KeyO => {
+                    if state.modifiers.control_key() {
+                        let loaded = state.load_from_dxf();
+
+                        match loaded {
+                            Ok(_) => println!("loaded file"),
+                            Err(error) => eprintln!("i/o error while loading file: {}", error),
+                        };
+                    }
+                }
                 KeyCode::Escape => {
                     if state.mode == Mode::DrawLine {
                         if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state

@@ -11,11 +11,11 @@ use graphics::gui_elements;
 use graphics::renderer;
 use graphics::camera;
 use events::input;
+use model::circle::CircleOps;
 use model::line::Line;
 use model::circle::Circle;
 use model::line::flatten_lines;
 use model::circle::flatten_circles;
-use model::circle::CircleOps;
 
 use gui::EguiRenderer;
 use gui_elements::GUI;
@@ -25,9 +25,14 @@ use egui_winit::winit::{
     event_loop::{EventLoop, ControlFlow},
     window::{Window, WindowBuilder},
 };
+use model::line::LineOps;
 use winit::keyboard::ModifiersState;
 use winit::window::CursorIcon;
 use egui_winit::winit;
+
+use dxf::Drawing;
+use dxf::entities::*;
+use dxf::entities::EntityType;
 
 #[derive(Debug)]
 enum DrawingState {
@@ -294,6 +299,44 @@ impl<'a> State<'a> {
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         renderer::render(self)
+    }
+
+    pub fn save_to_dxf(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut drawing = Drawing::new();
+
+        for line_entity in &self.lines {
+            let start_position = line_entity.vertices[0].position;
+            let end_position = line_entity.vertices[1].position;
+
+            let line = dxf::entities::Line::new(
+                dxf::Point::new(start_position[0] as f64, start_position[1] as f64, 0.0),
+                dxf::Point::new(end_position[0] as f64, end_position[1] as f64, 0.0),
+            );
+
+            drawing.add_entity(Entity::new(EntityType::Line(line)));
+        }
+
+        drawing.save_file("C:/Users/krist/Desktop/test.dxf")?;
+
+        Ok(())
+    }
+
+    pub fn load_from_dxf(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let drawing = Drawing::load_file("C:/Users/krist/Documents/load_test.dxf")?;
+
+        for e in drawing.entities() {
+            match e.specific {
+                EntityType::Line(ref line) => {
+                    self.add_line([line.p1.x as f32, line.p1.y as f32], [line.p2.x as f32, line.p2.y as f32]);
+                }
+                EntityType::Circle(ref circle) => {
+                    self.add_circle([circle.center.x as f32, circle.center.y as f32], circle.radius as f32, [1.0, 1.0, 1.0]);
+                }
+                _ => {}
+            }
+        }
+
+        Ok(())
     }
 }
 
