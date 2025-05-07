@@ -58,22 +58,27 @@ struct State<'a> {
 
     render_pipeline: wgpu::RenderPipeline,
     render_pipeline2: wgpu::RenderPipeline,
+    xy_axis_render_pipeline: wgpu::RenderPipeline,
 
     vertex_buffer: wgpu::Buffer,
     vertex_buffer_circle: wgpu::Buffer,
     index_buffer_circle: wgpu::Buffer,
+    axis_vertex_buffer: wgpu::Buffer,
 
     lines: Vec<Line>,
     circles: Vec<Circle>,
     circle_indices: Vec<u32>,
+    // xy_axis: Vec<Line>,
 
     num_vertices: u32,
     num_vertices_circle: u32,
+    // num_vertices_xy_axis: u32,
 
     drawing_state: DrawingState,
     mode: Mode,
     cursor_position: Option<[f32; 2]>,
     last_position_for_pan: Option<[f32; 2]>,
+    last_screen_position_for_pan: Option<[f32; 2]>,
     egui: EguiRenderer,
     camera: camera::Camera,
     camera_buffer: wgpu::Buffer,
@@ -170,13 +175,18 @@ impl<'a> State<'a> {
         });
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("shader module"),
+            label: Some("line shader module"),
             source: wgpu::ShaderSource::Wgsl(include_str!("assets/line.wgsl").into()),
         });
 
         let circle_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("shader module"),
+            label: Some("circle shader module"),
             source: wgpu::ShaderSource::Wgsl(include_str!("assets/circle.wgsl").into()),
+        });
+
+        let xy_axis_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("x y axis shader module"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("assets/xy_axis.wgsl").into()),
         });
 
         // let vertices = Vec::new();
@@ -194,6 +204,32 @@ impl<'a> State<'a> {
             contents: &[],
         });
 
+        let axis_coordinates = [
+            Vertex {
+                position: [50.1, 0.0, 0.0],
+                color: [255.0, 0.0, 0.0],
+            },
+            Vertex {
+                position: [0.0, 0.0, 0.0],
+                color: [255.0, 0.0, 0.0],
+            },
+            Vertex {
+                position: [0.0, 50.1, 0.0],
+                color: [1.0, 1.0, 1.0],
+            },
+            Vertex {
+                position: [0.0, 0.0, 0.0],
+                color: [1.0, 1.0, 1.0],
+            },
+        ];
+
+        // let xy_axis = Vec::new();
+        let axis_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("vertex buffer"),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            contents: bytemuck::cast_slice(&axis_coordinates),
+        });
+
         let circle_indices = Vec::new();
         let index_buffer_circle = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -205,6 +241,7 @@ impl<'a> State<'a> {
 
         let render_pipeline = Pipeline::new(&device, &config, &shader, &camera_bind_group_layout).render_pipeline;
         let render_pipeline2 = Pipeline::new_circle_pipeline(&device, &config, &circle_shader, &camera_bind_group_layout).render_pipeline;
+        let xy_axis_render_pipeline = Pipeline::new_xy_axis_pipeline(&device, &config, &xy_axis_shader, &camera_bind_group_layout).render_pipeline;
 
         let egui = EguiRenderer::new(
             &device,       // wgpu Device
@@ -226,22 +263,27 @@ impl<'a> State<'a> {
 
             render_pipeline,
             render_pipeline2,
+            xy_axis_render_pipeline,
 
             vertex_buffer,
             vertex_buffer_circle,
             circle_indices,
+            axis_vertex_buffer,
 
             lines,
             circles,
             index_buffer_circle,
+            // xy_axis,
 
             num_vertices: 0,
             num_vertices_circle: 0,
+            // num_vertices_xy_axis: 0,
 
             drawing_state: DrawingState::Idle,
             mode: Mode::Normal,
             cursor_position: None,
             last_position_for_pan: None,
+            last_screen_position_for_pan: None,
             egui,
             camera,
             camera_buffer,
@@ -292,6 +334,17 @@ impl<'a> State<'a> {
         });
     }
 
+    // pub fn update_axis_vertex_buffer(&mut self) {
+    //     self.axis_vertex_buffer = self
+    //         .device
+    //         .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    //             label: Some("axis vertex buffer"),
+    //             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+    //             contents: bytemuck::cast_slice(&flatten_lines(&self.xy_axis)),
+    //         });
+    //     self.num_vertices = (self.xy_axis.len() as u32) * 2;
+    // }
+
     pub fn input(&mut self, event: &WindowEvent) -> bool {
         self.window().request_redraw();
         input::handle_input(self, event)
@@ -321,8 +374,9 @@ impl<'a> State<'a> {
         Ok(())
     }
 
-    pub fn load_from_dxf(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let drawing = Drawing::load_file("C:/Users/krist/Documents/load_test.dxf")?;
+    pub fn load_from_dxf(&mut self, file_path: String) -> Result<(), Box<dyn std::error::Error>> {
+        let drawing = Drawing::load_file(file_path)?;
+        // let drawing = Drawing::load_file("C:/Users/krist/Documents/load_test.dxf")?;
 
         for e in drawing.entities() {
             match e.specific {
@@ -349,36 +403,37 @@ pub async fn run() {
 
     let mut state = State::new(&window).await;
     
-    state.lines.push(Line {
-        vertices: [
-            Vertex {
-                position: [50.0, 0.0, 0.0],
-                color: [1.0, 1.0, 1.0],
-            },
-            Vertex {
-                position: [0.0, 0.0, 0.0],
-                color: [1.0, 1.0, 1.0],
-            },
-        ],
-    });
-    state.lines.push(Line {
-        vertices: [
-            Vertex {
-                position: [0.0, 0.0, 0.0],
-                color: [1.0, 1.0, 1.0],
-            },
-            Vertex {
-                position: [0.0, 50.0, 0.0],
-                color: [1.0, 1.0, 1.0],
-            },
-        ],
-    });
+    // state.xy_axis.push(Line {
+    //     vertices: [
+    //         Vertex {
+    //             position: [50.0, 0.0, 0.0],
+    //             color: [1.0, 1.0, 1.0],
+    //         },
+    //         Vertex {
+    //             position: [0.0, 0.0, 0.0],
+    //             color: [1.0, 1.0, 1.0],
+    //         },
+    //     ],
+    // });
+    // state.xy_axis.push(Line {
+    //     vertices: [
+    //         Vertex {
+    //             position: [0.0, 0.0, 0.0],
+    //             color: [1.0, 1.0, 1.0],
+    //         },
+    //         Vertex {
+    //             position: [0.0, 50.0, 0.0],
+    //             color: [1.0, 1.0, 1.0],
+    //         },
+    //     ],
+    // });
 
    // state.add_circle([0.0, 0.0], 60.0, [1.0, 1.0, 1.0]);
    // state.add_circle([200.0, 30.0], 50.0, [1.0, 1.0, 1.0]);
 
     state.update_vertex_buffer();
     state.update_circle_vertex_buffer();
+    // state.update_axis_vertex_buffer();
     event_loop
         .run(move |event, control_flow| {
             match event {

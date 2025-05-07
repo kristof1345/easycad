@@ -48,6 +48,6 @@ impl Camera {
 
     pub fn zoom(&mut self, factor: f32) {
         self.zoom *= factor;
-        self.zoom = self.zoom.clamp(0.1, 10.0);
+        self.zoom = self.zoom.clamp(0.01, 100.0);
     }
 }

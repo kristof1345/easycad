@@ -1,5 +1,8 @@
+use crate::graphics::gui_elements::UiAction;
+use crate::Mode;
 use crate::State;
 use crate::GUI;
+// use bytemuck::fill_zeroes;
 use egui_wgpu::wgpu;
 use egui_wgpu::ScreenDescriptor;
 use std::iter;
@@ -38,6 +41,11 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
             occlusion_query_set: None,
         });
 
+        render_pass.set_pipeline(&state.xy_axis_render_pipeline);
+        render_pass.set_vertex_buffer(0, state.axis_vertex_buffer.slice(..));
+        render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
+        render_pass.draw(0..4, 0..1);
+
         render_pass.set_pipeline(&state.render_pipeline);
         render_pass.set_vertex_buffer(0, state.vertex_buffer.slice(..));
         render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
@@ -60,6 +68,8 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
     };
 
     let mode_flag = &mut state.mode;
+    let mut load_flag = false;
+    let mut load_path: String = String::new();
 
     state.egui.draw(
         &state.device,
@@ -69,12 +79,26 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         &view,
         screen_descriptor,
         |ui| {
-            if let Some(mode) = GUI(ui) {
-                *mode_flag = mode;
-                // gui_action = Some(action);
+            if let Some(action) = GUI(ui) {
+                match action {
+                    UiAction::DrawLine => {
+                        *mode_flag = Mode::DrawLine;
+                    }
+                    UiAction::DrawCircle => {
+                        *mode_flag = Mode::DrawCircle;
+                    }
+                    UiAction::OpenFilePath(file_path) => {
+                        load_flag = true;
+                        load_path = file_path;
+                    }
+                }
             }
         },
     );
+
+    if load_flag {
+        let _ = state.load_from_dxf(load_path);
+    }
 
     // if let Some(action) = gui_action {
     //     match action {

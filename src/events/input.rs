@@ -47,12 +47,12 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 }
                 KeyCode::KeyO => {
                     if state.modifiers.control_key() {
-                        let loaded = state.load_from_dxf();
+                        // let loaded = state.load_from_dxf();
 
-                        match loaded {
-                            Ok(_) => println!("loaded file"),
-                            Err(error) => eprintln!("i/o error while loading file: {}", error),
-                        };
+                        // match loaded {
+                        //     Ok(_) => println!("loaded file"),
+                        //     Err(error) => eprintln!("i/o error while loading file: {}", error),
+                        // };
                     }
                 }
                 KeyCode::Escape => {
@@ -95,6 +95,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             true
         }
 
+        // Panning implementation
         WindowEvent::CursorMoved { position, .. }
             if state.dragging || state.modifiers.control_key() =>
         {
@@ -126,6 +127,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
         }
 
         WindowEvent::CursorMoved { position, .. } => {
+            state.last_screen_position_for_pan = Some([position.x as f32, position.y as f32]);
+
             let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
             let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
 
@@ -146,6 +149,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             if let DrawingState::WaitingForRadius(_start_pos) = state.drawing_state {
                 state.update_circle([world_x_pan, world_y_pan]);
             }
+
             true
         }
 
@@ -215,14 +219,33 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             true
         }
 
+        // Scrolling implementation
         WindowEvent::MouseWheel { delta, .. } => {
             let zoom_speed = 0.1;
+
             match delta {
                 MouseScrollDelta::LineDelta(_, y) => {
                     state.camera.zoom(1.0 + zoom_speed * y.signum());
+
+                    // println!(
+                    //     "screen: {:?}; pan: {:?}",
+                    //     state.last_screen_position_for_pan, state.last_position_for_pan
+                    // );
+
+                    // if let Some([screen_x, screen_y]) = state.last_screen_position_for_pan {
+                    //     // Convert screen coordinates to world coordinates after zoom
+                    //     let cen_x = screen_x - (state.size.width as f32 / 2.0);
+                    //     let cen_y = (state.size.height as f32 / 2.0) - screen_y;
+                    //     let world_x = cen_x / state.camera.zoom + state.camera.x_offset;
+                    //     let world_y = cen_y / state.camera.zoom + state.camera.y_offset;
+
+                    //     state.last_position_for_pan = Some([world_x, world_y]);
+                    //     println!("updated: {:?}", state.last_position_for_pan);
+                    // }
                 }
                 MouseScrollDelta::PixelDelta(pos) => {
                     state.camera.zoom(1.0 + zoom_speed * pos.y.signum() as f32);
+                    println!("zoom two");
                 }
             }
 
