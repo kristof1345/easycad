@@ -41,11 +41,17 @@ enum DrawingState {
     WaitingForRadius([f32; 2]),
 }
 
-#[derive(Debug,PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 enum Mode {
     Normal,
-    DrawLine,
+    DrawLine(DrawLineMode),
     DrawCircle,
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+enum DrawLineMode {
+    Normal,
+    Ortho, // 0, 90, 180, 270 degrees
 }
 
 struct State<'a> {
@@ -477,7 +483,7 @@ pub async fn run() {
                                 Mode::Normal => {
                                     state.window.set_cursor_icon(CursorIcon::Default);
                                 }
-                                Mode::DrawLine => {
+                                Mode::DrawLine(DrawLineMode::Normal) | Mode::DrawLine(DrawLineMode::Ortho) => {
                                     state.window.set_cursor_icon(CursorIcon::Crosshair);
                                 }
                                 Mode::DrawCircle => {

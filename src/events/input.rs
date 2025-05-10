@@ -1,5 +1,6 @@
 use crate::model::circle::CircleOps;
 use crate::model::line::LineOps;
+use crate::DrawLineMode;
 use crate::DrawingState;
 use crate::Mode;
 use crate::State;
@@ -27,7 +28,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             match keycode {
                 KeyCode::KeyL => {
                     if state.mode == Mode::Normal {
-                        state.mode = Mode::DrawLine;
+                        state.mode = Mode::DrawLine(DrawLineMode::Normal);
                     }
                 }
                 KeyCode::KeyC => {
@@ -54,9 +55,16 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         //     Err(error) => eprintln!("i/o error while loading file: {}", error),
                         // };
                     }
+                    if state.mode == Mode::DrawLine(DrawLineMode::Normal) {
+                        state.mode = Mode::DrawLine(DrawLineMode::Ortho);
+                    } else if state.mode == Mode::DrawLine(DrawLineMode::Ortho) {
+                        state.mode = Mode::DrawLine(DrawLineMode::Normal);
+                    }
                 }
                 KeyCode::Escape => {
-                    if state.mode == Mode::DrawLine {
+                    if state.mode == Mode::DrawLine(DrawLineMode::Normal)
+                        || state.mode == Mode::DrawLine(DrawLineMode::Ortho)
+                    {
                         if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state
                         {
                             state.cancel_drawing_line();
@@ -126,6 +134,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             true
         }
 
+        // converting cursor position into world space and storing it
         WindowEvent::CursorMoved { position, .. } => {
             state.last_screen_position_for_pan = Some([position.x as f32, position.y as f32]);
 
@@ -157,11 +166,12 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if state.mode == Mode::DrawLine || state.mode == Mode::DrawCircle => {
+        } if state.mode != Mode::Normal => {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
                     DrawingState::Idle => match state.mode {
-                        Mode::DrawLine => {
+                        Mode::DrawLine(DrawLineMode::Normal)
+                        | Mode::DrawLine(DrawLineMode::Ortho) => {
                             state.drawing_state = DrawingState::WaitingForSecondPoint(position);
                             state.add_line(position, position);
                         }
@@ -172,7 +182,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         _ => {}
                     },
                     DrawingState::WaitingForSecondPoint(_start_pos) => match state.mode {
-                        Mode::DrawLine => {
+                        Mode::DrawLine(DrawLineMode::Normal)
+                        | Mode::DrawLine(DrawLineMode::Ortho) => {
                             state.update_line(position);
                             state.drawing_state = DrawingState::Idle;
                         }
@@ -190,6 +201,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             true
         }
 
+        // Selection logic
         // TODO: Change vertices to lines
         WindowEvent::MouseInput {
             state: ElementState::Pressed,

@@ -54,7 +54,7 @@ impl Camera {
     pub fn zoom_at_cursor(&mut self, factor: f32, mouse_world_x: f32, mouse_world_y: f32) {
         let old_zoom = self.zoom;
         self.zoom *= factor;
-        self.zoom = self.zoom.clamp(0.1, 1000.0);
+        self.zoom = self.zoom.clamp(0.1, 100000.0);
 
         self.x_offset = mouse_world_x - ((mouse_world_x - self.x_offset) * old_zoom / self.zoom);
         self.y_offset = mouse_world_y - ((mouse_world_y - self.y_offset) * old_zoom / self.zoom);

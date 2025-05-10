@@ -1,5 +1,5 @@
 use crate::graphics::vertex::Vertex;
-use crate::{DrawingState, Mode, State};
+use crate::{DrawLineMode, DrawingState, Mode, State};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Line {
@@ -49,10 +49,30 @@ impl<'a> LineOps for State<'a> {
 
         let length = self.lines.len();
 
-        self.lines[(length - 1) as usize].vertices[1] = Vertex {
-            position: [world_x, world_y, 0.0],
-            color: [1.0, 1.0, 1.0],
-        };
+        let prev_vertice = self.lines[(length - 1) as usize].vertices[0];
+
+        if self.mode == Mode::DrawLine(DrawLineMode::Normal) {
+            self.lines[(length - 1) as usize].vertices[1] = Vertex {
+                position: [world_x, world_y, 0.0],
+                color: [1.0, 1.0, 1.0],
+            };
+            // this section is buggy, I need to subtract the prev_vertice from world_x and world_y
+        } else if self.mode == Mode::DrawLine(DrawLineMode::Ortho) {
+            if (prev_vertice.position[0] - world_x).abs()
+                > (prev_vertice.position[1] - world_y).abs()
+            {
+                self.lines[(length - 1) as usize].vertices[1] = Vertex {
+                    position: [world_x, prev_vertice.position[1], 0.0],
+                    color: [1.0, 1.0, 1.0],
+                };
+            } else {
+                self.lines[(length - 1) as usize].vertices[1] = Vertex {
+                    position: [prev_vertice.position[0], world_y, 0.0],
+                    color: [1.0, 1.0, 1.0],
+                };
+            }
+        }
+
         self.update_vertex_buffer();
     }
 

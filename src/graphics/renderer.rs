@@ -1,4 +1,5 @@
 use crate::graphics::gui_elements::UiAction;
+use crate::DrawLineMode;
 use crate::Mode;
 use crate::State;
 use crate::GUI;
@@ -82,7 +83,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
             if let Some(action) = GUI(ui) {
                 match action {
                     UiAction::DrawLine => {
-                        *mode_flag = Mode::DrawLine;
+                        *mode_flag = Mode::DrawLine(DrawLineMode::Normal);
                     }
                     UiAction::DrawCircle => {
                         *mode_flag = Mode::DrawCircle;
