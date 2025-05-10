@@ -76,6 +76,8 @@ struct State<'a> {
 
     drawing_state: DrawingState,
     mode: Mode,
+
+    // cursor position in world coordinates
     cursor_position: Option<[f32; 2]>,
     last_position_for_pan: Option<[f32; 2]>,
     last_screen_position_for_pan: Option<[f32; 2]>,

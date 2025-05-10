@@ -225,23 +225,13 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
             match delta {
                 MouseScrollDelta::LineDelta(_, y) => {
-                    state.camera.zoom(1.0 + zoom_speed * y.signum());
-
-                    // println!(
-                    //     "screen: {:?}; pan: {:?}",
-                    //     state.last_screen_position_for_pan, state.last_position_for_pan
-                    // );
-
-                    // if let Some([screen_x, screen_y]) = state.last_screen_position_for_pan {
-                    //     // Convert screen coordinates to world coordinates after zoom
-                    //     let cen_x = screen_x - (state.size.width as f32 / 2.0);
-                    //     let cen_y = (state.size.height as f32 / 2.0) - screen_y;
-                    //     let world_x = cen_x / state.camera.zoom + state.camera.x_offset;
-                    //     let world_y = cen_y / state.camera.zoom + state.camera.y_offset;
-
-                    //     state.last_position_for_pan = Some([world_x, world_y]);
-                    //     println!("updated: {:?}", state.last_position_for_pan);
-                    // }
+                    let factor = 1.0 + zoom_speed * y.signum();
+                    // state.camera.zoom(factor);
+                    state.camera.zoom_at_cursor(
+                        factor,
+                        state.cursor_position.unwrap()[0],
+                        state.cursor_position.unwrap()[1],
+                    );
                 }
                 MouseScrollDelta::PixelDelta(pos) => {
                     state.camera.zoom(1.0 + zoom_speed * pos.y.signum() as f32);
