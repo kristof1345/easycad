@@ -34,6 +34,8 @@ use dxf::Drawing;
 use dxf::entities::*;
 use dxf::entities::EntityType;
 
+use std::time::Instant as OtherInstant;
+
 #[derive(Debug)]
 enum DrawingState {
     Idle,
@@ -383,9 +385,11 @@ impl<'a> State<'a> {
     }
 
     pub fn load_from_dxf(&mut self, file_path: String) -> Result<(), Box<dyn std::error::Error>> {
+        let time_to_load_drawing = OtherInstant::now();
         let drawing = Drawing::load_file(file_path)?;
-        // let drawing = Drawing::load_file("C:/Users/krist/Documents/load_test.dxf")?;
+        println!("drawing took: {:?}", time_to_load_drawing.elapsed());
 
+        let now = OtherInstant::now();
         for e in drawing.entities() {
             match e.specific {
                 EntityType::Line(ref line) => {
@@ -397,6 +401,7 @@ impl<'a> State<'a> {
                 _ => {}
             }
         }
+        println!("⏱ now took: {:?}", now.elapsed());        
 
         Ok(())
     }

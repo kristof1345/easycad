@@ -5,6 +5,7 @@ pub enum UiAction {
     DrawLine,
     DrawCircle,
     OpenFilePath(String),
+    SaveFile,
 }
 
 pub fn GUI(ui: &Context) -> Option<UiAction> {
@@ -25,6 +26,10 @@ pub fn GUI(ui: &Context) -> Option<UiAction> {
                     if let Some(path) = rfd::FileDialog::new().pick_file() {
                         action = Some(UiAction::OpenFilePath(path.display().to_string()));
                     }
+                }
+
+                if ui.button("Save").clicked() {
+                    action = Some(UiAction::SaveFile);
                 }
             });
         });

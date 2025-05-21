@@ -70,6 +70,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
 
     let mode_flag = &mut state.mode;
     let mut load_flag = false;
+    let mut save_flag = false;
     let mut load_path: String = String::new();
 
     state.egui.draw(
@@ -92,6 +93,9 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
                         load_flag = true;
                         load_path = file_path;
                     }
+                    UiAction::SaveFile => {
+                        save_flag = true;
+                    }
                 }
             }
         },
@@ -99,6 +103,10 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
 
     if load_flag {
         let _ = state.load_from_dxf(load_path);
+    }
+
+    if save_flag {
+        let _ = state.save_to_dxf();
     }
 
     // if let Some(action) = gui_action {

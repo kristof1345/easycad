@@ -48,12 +48,18 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 }
                 KeyCode::KeyO => {
                     if state.modifiers.control_key() {
-                        // let loaded = state.load_from_dxf();
+                        let mut path: String = String::new();
 
-                        // match loaded {
-                        //     Ok(_) => println!("loaded file"),
-                        //     Err(error) => eprintln!("i/o error while loading file: {}", error),
-                        // };
+                        if let Some(file_path) = rfd::FileDialog::new().pick_file() {
+                            path = file_path.display().to_string();
+                        }
+
+                        let loaded = state.load_from_dxf(path);
+
+                        match loaded {
+                            Ok(_) => println!("loaded file"),
+                            Err(error) => eprintln!("i/o error while loading file: {}", error),
+                        };
                     }
                     if state.mode == Mode::DrawLine(DrawLineMode::Normal) {
                         state.mode = Mode::DrawLine(DrawLineMode::Ortho);
