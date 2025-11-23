@@ -216,21 +216,27 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
         } if state.mode == Mode::Normal => {
             if let Some(position) = state.cursor_position {
                 let mut update: bool = false;
+                println!("{:?}", state.lines);
                 for line in &mut state.lines {
                     let a = line.vertices[0].position;
                     let b = line.vertices[1].position;
 
-                    let product =
-                        (b[0] - a[0]) * (position[1] - a[1]) - (b[1] - a[1]) * (position[0] - a[0]);
+                    // let product =
+                        // (b[0] - a[0]) * (position[1] - a[1]) - (b[1] - a[1]) * (position[0] - a[0]);
+                    let d = point_segment_distance(position[0], position[1], a[0], a[1], b[0], b[1]);
 
-                    if product.abs() < 850.0 {
+                    if d < 5.0 {
                         line.vertices[0].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
                         line.vertices[1].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
                         update = true;
+                    } else {
+                        line.vertices[0].color = [1.0, 1.0, 1.0];
+                        line.vertices[1].color = [1.0, 1.0, 1.0];
                     }
                 }
 
                 if update {
+                    // make_lines_white(state);
                     state.update_vertex_buffer();
                 }
             }
@@ -269,4 +275,31 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
         }
         _ => false,
     }
+}
+
+
+// helper functions
+
+fn point_segment_distance(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) -> f32 {
+    let abx: f32 = bx - ax;
+    let aby: f32 = by - ay;
+    
+    // handle zero length segment
+    let ab_len_squared = abx * abx + aby * aby;
+    if ab_len_squared == 0.0 {
+        let dx: f32 = px - ax;
+        let dy: f32 = py - ay;
+        return (dx * dx + dy * dy).sqrt();
+    }
+    
+    let t = ((px - ax) * abx + (py - ay) * aby) / ab_len_squared;
+
+    let t = t.clamp(0.0, 1.0);
+
+    let cx: f32 = ax + t * abx;
+    let cy: f32 = ay + t * aby;
+
+    let dx: f32 = px - cx;
+    let dy: f32 = py - cy;
+    (dx * dx + dy * dy).sqrt()
 }
