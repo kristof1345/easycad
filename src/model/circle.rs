@@ -12,14 +12,21 @@ pub trait CircleOps {
     fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3]);
     fn update_circle(&mut self, position: [f32; 2]);
     fn cancel_drawing_circle(&mut self);
+    fn unselect_circles(&mut self);
 }
 
 // flatten vector of circles into flat vector of vertices
-pub fn flatten_circles(circles: &Vec<Circle>) -> Vec<Vertex> {
+pub fn flatten_circles(circles: &mut Vec<Circle>) -> Vec<Vertex> {
     let mut flat = Vec::new();
     let n = 36;
 
-    for circle in circles.iter() {
+    for circle in circles.iter_mut() {
+        if circle.selected {
+            circle.center.color = [1.0, 0.0, 0.0];
+        } else {
+            circle.center.color = [1.0, 1.0, 1.0];
+        }
+
         for i in 0..n {
             let theta = 2.0 * std::f32::consts::PI * (i as f32) / (n as f32);
             let x = circle.center.position[0] + circle.radius * theta.cos();
@@ -38,7 +45,7 @@ impl<'a> CircleOps for State<'a> {
     fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3]) {
         let segments = 36;
 
-        let all_vertices = flatten_circles(&self.circles);
+        let all_vertices = flatten_circles(&mut self.circles);
 
         let base_index = all_vertices.len() as u32;
 
@@ -85,6 +92,16 @@ impl<'a> CircleOps for State<'a> {
         self.circle_indices.truncate(self.circle_indices.len() - 72);
         self.drawing_state = DrawingState::Idle;
         self.mode = Mode::Normal;
+        self.update_circle_vertex_buffer();
+    }
+
+    fn unselect_circles(&mut self) {
+        for circle in &mut self.circles {
+            if circle.selected {
+                circle.selected = false;
+            }
+        }
+
         self.update_circle_vertex_buffer();
     }
 }

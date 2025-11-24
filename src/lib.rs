@@ -334,7 +334,7 @@ impl<'a> State<'a> {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("circle vertex buffer"),
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                contents: bytemuck::cast_slice(&flatten_circles(&self.circles)),
+                contents: bytemuck::cast_slice(&flatten_circles(&mut self.circles)),
             });
         self.num_vertices_circle = (self.circles.len() as u32) * 36; // 37 because of the last closing vertex
 
@@ -387,11 +387,13 @@ impl<'a> State<'a> {
 
     pub fn load_from_dxf(&mut self, file_path: String) -> Result<(), Box<dyn std::error::Error>> {
         let time_to_load_drawing = OtherInstant::now();
+        println!("loading...");
         let drawing = Drawing::load_file(file_path)?;
         println!("drawing took: {:?}", time_to_load_drawing.elapsed());
 
         let now = OtherInstant::now();
         for e in drawing.entities() {
+            println!("entity: {:?}", e);
             match e.specific {
                 EntityType::Line(ref line) => {
                     self.add_line([line.p1.x as f32, line.p1.y as f32], [line.p2.x as f32, line.p2.y as f32]);

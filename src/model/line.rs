@@ -30,6 +30,7 @@ pub trait LineOps {
     fn add_line(&mut self, start: [f32; 2], end: [f32; 2]);
     fn update_line(&mut self, position: [f32; 2]);
     fn cancel_drawing_line(&mut self);
+    fn unselect_lines(&mut self);
 }
 
 // add offsets
@@ -89,6 +90,16 @@ impl<'a> LineOps for State<'a> {
         self.lines.pop();
         self.drawing_state = DrawingState::Idle;
         self.mode = Mode::Normal;
+        self.update_vertex_buffer();
+    }
+
+    fn unselect_lines(&mut self) {
+        for line in &mut self.lines {
+            if line.selected {
+                line.selected = false;
+            }
+        }
+
         self.update_vertex_buffer();
     }
 }

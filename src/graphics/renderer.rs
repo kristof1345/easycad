@@ -9,7 +9,23 @@ use egui_wgpu::ScreenDescriptor;
 use std::iter;
 
 pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
-    let frame = state.surface.get_current_texture().unwrap();
+    let frame = match state.surface.get_current_texture() {
+        Ok(frame) => frame,
+        Err(wgpu::SurfaceError::Lost) => {
+            state.resize(state.size);
+            return Ok(());
+        },
+        Err(wgpu::SurfaceError::Outdated) => {
+            return Ok(());
+        }
+        Err(wgpu::SurfaceError::Timeout) => {
+            eprintln!("Surface timeout!");
+            return Ok(());
+        }
+        Err(wgpu::SurfaceError::OutOfMemory) => {
+            panic!("Out of memory!");
+        }
+    };
 
     let view = frame
         .texture

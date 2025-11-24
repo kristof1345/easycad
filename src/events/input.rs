@@ -1,3 +1,4 @@
+use crate::model::circle;
 use crate::model::circle::CircleOps;
 use crate::model::line::LineOps;
 use crate::DrawLineMode;
@@ -89,22 +90,20 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     }
 
                     if state.mode == Mode::Selection {
-                        for line in &mut state.lines {
-                            if line.selected {
-                                line.selected = false;
-                            }
+                        // if lines are selected
+                        // unselec_lines
+                        if state.lines.iter().any(|line| line.selected) {
+                            state.unselect_lines();
                         }
-                        for circle in &mut state.circles {
-                            if circle.selected {
-                                circle.selected = false;
-                            }
+
+                        // if circles are selected
+                        // unselect circles
+                        if state.circles.iter().any(|circle| circle.selected) {
+                            state.unselect_circles();
                         }
-                        state.update_vertex_buffer();
-                        println!("vertex buffer updated!")
                     }
                     state.mode = Mode::Normal;
                     state.drawing_state = DrawingState::Idle;
-                    println!("mode should not be selection: {:?}", state.mode);
                 }
                 _ => {}
             }
@@ -238,33 +237,36 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
         } if state.mode == Mode::Normal || state.mode == Mode::Selection => {
             if let Some(position) = state.cursor_position {
                 let mut update: bool = false;
-                println!("before selection: {:#?}", state.lines);
+  
                 for line in &mut state.lines {
                     let a = line.vertices[0].position;
                     let b = line.vertices[1].position;
 
-                    // let product =
-                        // (b[0] - a[0]) * (position[1] - a[1]) - (b[1] - a[1]) * (position[0] - a[0]);
                     let d = point_segment_distance(position[0], position[1], a[0], a[1], b[0], b[1]);
 
                     if d < 5.0 && !line.selected {
                         state.mode = Mode::Selection;
-                        println!("mode should be selection: {:?}", state.mode);
-                        // line.vertices[0].color = [255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0];
-                        // line.vertices[1].color = [255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0];
                         line.selected = true;
                         update = true;
                     } 
-                    // else {
-                        // line.vertices[0].color = [1.0, 1.0, 1.0];
-                        // line.vertices[1].color = [1.0, 1.0, 1.0];
-                    // }
+                }
+
+                for circle in &mut state.circles {
+                    let [cx, cy, ..] = circle.center.position;
+                    let rad = circle.radius;
+
+                    let d = circle_hit(position[0], position[1], cx, cy, rad);
+
+                    if d < 5.0 && !circle.selected {
+                        state.mode = Mode::Selection;
+                        circle.selected = true;
+                        update = true;
+                    } 
                 }
 
                 if update {
-                    // make_lines_white(state);
-                    println!("after selection: {:#?}", state.lines);
                     state.update_vertex_buffer();
+                    state.update_circle_vertex_buffer();
                 }
             }
             true
@@ -329,4 +331,12 @@ fn point_segment_distance(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) 
     let dx: f32 = px - cx;
     let dy: f32 = py - cy;
     (dx * dx + dy * dy).sqrt()
+}
+
+fn circle_hit(px: f32, py: f32, cx: f32, cy: f32, r: f32) -> f32 {
+    let dx = px - cx;
+    let dy = py - cy;
+    let dist = (dx*dx + dy*dy).sqrt();
+
+    (dist - r).abs()
 }
