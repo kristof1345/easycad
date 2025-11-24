@@ -48,6 +48,7 @@ enum Mode {
     Normal,
     DrawLine(DrawLineMode),
     DrawCircle,
+    Selection,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -322,7 +323,7 @@ impl<'a> State<'a> {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("vertex buffer"),
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                contents: bytemuck::cast_slice(&flatten_lines(&self.lines)),
+                contents: bytemuck::cast_slice(&flatten_lines(&mut self.lines)),
             });
         self.num_vertices = (self.lines.len() as u32) * 2;
     }
@@ -493,6 +494,9 @@ pub async fn run() {
                                 }
                                 Mode::DrawCircle => {
                                     state.window.set_cursor_icon(CursorIcon::Crosshair);
+                                }
+                                Mode::Selection => {
+                                    state.window.set_cursor_icon(CursorIcon::Pointer)
                                 }
                             }
                         }

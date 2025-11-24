@@ -4,13 +4,21 @@ use crate::{DrawLineMode, DrawingState, Mode, State};
 #[derive(Debug, Clone, Copy)]
 pub struct Line {
     pub vertices: [Vertex; 2],
+    pub selected: bool,
 }
 
 // flatten lines vector into a flat vector of vertices
-pub fn flatten_lines(lines: &Vec<Line>) -> Vec<Vertex> {
+pub fn flatten_lines(lines: &mut Vec<Line>) -> Vec<Vertex> {
     let mut flat = Vec::new();
 
-    for line in lines.iter() {
+    for line in lines.iter_mut() {
+        if line.selected {
+            line.vertices[0].color = [1.0, 0.0, 0.0]; // bright red
+            line.vertices[1].color = [1.0, 0.0, 0.0]; // bright red
+        } else {
+            line.vertices[0].color = [1.0, 1.0, 1.0]; // white
+            line.vertices[1].color = [1.0, 1.0, 1.0]; // white
+        }
         flat.push(line.vertices[0]);
         flat.push(line.vertices[1]);
     }
@@ -38,6 +46,7 @@ impl<'a> LineOps for State<'a> {
                     color: [1.0, 1.0, 1.0],
                 },
             ],
+            selected: false,
         });
 
         self.update_vertex_buffer();

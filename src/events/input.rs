@@ -44,6 +44,11 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             Ok(_) => println!("file saved"),
                             Err(error) => eprintln!("i/o error while saving file: {}", error),
                         };
+                    } else {
+                        // test
+                        if state.mode == Mode::Normal {
+                            state.mode = Mode::Selection;
+                        }
                     }
                 }
                 KeyCode::KeyO => {
@@ -82,8 +87,24 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.cancel_drawing_circle();
                         }
                     }
+
+                    if state.mode == Mode::Selection {
+                        for line in &mut state.lines {
+                            if line.selected {
+                                line.selected = false;
+                            }
+                        }
+                        for circle in &mut state.circles {
+                            if circle.selected {
+                                circle.selected = false;
+                            }
+                        }
+                        state.update_vertex_buffer();
+                        println!("vertex buffer updated!")
+                    }
                     state.mode = Mode::Normal;
                     state.drawing_state = DrawingState::Idle;
+                    println!("mode should not be selection: {:?}", state.mode);
                 }
                 _ => {}
             }
@@ -168,11 +189,12 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             true
         }
 
+        // handles drawing state
         WindowEvent::MouseInput {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if state.mode != Mode::Normal => {
+        } if state.mode != Mode::Normal && state.mode != Mode::Selection => {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
                     DrawingState::Idle => match state.mode {
@@ -213,10 +235,10 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if state.mode == Mode::Normal => {
+        } if state.mode == Mode::Normal || state.mode == Mode::Selection => {
             if let Some(position) = state.cursor_position {
                 let mut update: bool = false;
-                println!("{:?}", state.lines);
+                println!("before selection: {:#?}", state.lines);
                 for line in &mut state.lines {
                     let a = line.vertices[0].position;
                     let b = line.vertices[1].position;
@@ -225,18 +247,23 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         // (b[0] - a[0]) * (position[1] - a[1]) - (b[1] - a[1]) * (position[0] - a[0]);
                     let d = point_segment_distance(position[0], position[1], a[0], a[1], b[0], b[1]);
 
-                    if d < 5.0 {
-                        line.vertices[0].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
-                        line.vertices[1].color = [150.0 / 255.0, 20.0 / 255.0, 10.0 / 255.0];
+                    if d < 5.0 && !line.selected {
+                        state.mode = Mode::Selection;
+                        println!("mode should be selection: {:?}", state.mode);
+                        // line.vertices[0].color = [255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0];
+                        // line.vertices[1].color = [255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0];
+                        line.selected = true;
                         update = true;
-                    } else {
-                        line.vertices[0].color = [1.0, 1.0, 1.0];
-                        line.vertices[1].color = [1.0, 1.0, 1.0];
-                    }
+                    } 
+                    // else {
+                        // line.vertices[0].color = [1.0, 1.0, 1.0];
+                        // line.vertices[1].color = [1.0, 1.0, 1.0];
+                    // }
                 }
 
                 if update {
                     // make_lines_white(state);
+                    println!("after selection: {:#?}", state.lines);
                     state.update_vertex_buffer();
                 }
             }

@@ -5,6 +5,7 @@ use crate::{DrawingState, Mode, State};
 pub struct Circle {
     pub radius: f32,
     pub center: Vertex,
+    pub selected: bool,
 }
 
 pub trait CircleOps {
@@ -48,6 +49,7 @@ impl<'a> CircleOps for State<'a> {
                     color,
                 },
                 radius,
+                selected: false,
             }
         });
 
