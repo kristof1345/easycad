@@ -49,12 +49,19 @@ enum Mode {
     DrawLine(DrawLineMode),
     DrawCircle,
     Selection,
+    Move(MoveMode),
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 enum DrawLineMode {
     Normal,
     Ortho, // 0, 90, 180, 270 degrees
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+enum MoveMode {
+    Selection,
+    Move,
 }
 
 struct State<'a> {
@@ -498,7 +505,10 @@ pub async fn run() {
                                     state.window.set_cursor_icon(CursorIcon::Crosshair);
                                 }
                                 Mode::Selection => {
-                                    state.window.set_cursor_icon(CursorIcon::Pointer)
+                                    state.window.set_cursor_icon(CursorIcon::Pointer);
+                                }
+                                Mode::Move(_) => {
+                                    state.window.set_cursor_icon(CursorIcon::Move);
                                 }
                             }
                         }

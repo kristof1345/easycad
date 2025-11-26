@@ -1,7 +1,7 @@
-use crate::model::circle;
 use crate::model::circle::CircleOps;
 use crate::model::line::LineOps;
 use crate::DrawLineMode;
+use crate::MoveMode;
 use crate::DrawingState;
 use crate::Mode;
 use crate::State;
@@ -35,6 +35,11 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 KeyCode::KeyC => {
                     if state.mode == Mode::Normal {
                         state.mode = Mode::DrawCircle;
+                    }
+                }
+                KeyCode::KeyM => {
+                    if state.mode == Mode::Normal {
+                        state.mode = Mode::Move(MoveMode::Selection);
                     }
                 }
                 KeyCode::KeyS => {
@@ -89,7 +94,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         }
                     }
 
-                    if state.mode == Mode::Selection {
+                    if matches!(state.mode, Mode::Selection | Mode::Move(MoveMode::Selection)) {
                         // if lines are selected
                         // unselec_lines
                         if state.lines.iter().any(|line| line.selected) {
@@ -102,8 +107,14 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.unselect_circles();
                         }
                     }
+
                     state.mode = Mode::Normal;
                     state.drawing_state = DrawingState::Idle;
+                }
+                KeyCode::Enter => {
+                    if matches!(state.mode, Mode::Move(MoveMode::Selection)) {
+                        state.mode = Mode::Move(MoveMode::Move);
+                    }
                 }
                 _ => {}
             }
@@ -193,7 +204,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if state.mode != Mode::Normal && state.mode != Mode::Selection => {
+        } if matches!(state.mode, Mode::DrawCircle | Mode::DrawLine(_)) => {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
                     DrawingState::Idle => match state.mode {
@@ -234,9 +245,11 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if state.mode == Mode::Normal || state.mode == Mode::Selection => {
+        } if matches!(state.mode, Mode::Normal | Mode::Selection | Mode::Move(MoveMode::Selection)) => {
             if let Some(position) = state.cursor_position {
                 let mut update: bool = false;
+
+                let treshold = 5.0 / state.camera.zoom;
   
                 for line in &mut state.lines {
                     let a = line.vertices[0].position;
@@ -244,8 +257,10 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
                     let d = point_segment_distance(position[0], position[1], a[0], a[1], b[0], b[1]);
 
-                    if d < 5.0 && !line.selected {
-                        state.mode = Mode::Selection;
+                    if d < treshold && !line.selected {
+                        if !matches!(state.mode, Mode::Move(_)) {
+                            state.mode = Mode::Selection;
+                        }
                         line.selected = true;
                         update = true;
                     } 
@@ -257,8 +272,10 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
                     let d = circle_hit(position[0], position[1], cx, cy, rad);
 
-                    if d < 5.0 && !circle.selected {
-                        state.mode = Mode::Selection;
+                    if d < treshold && !circle.selected {
+                        if !matches!(state.mode, Mode::Move(_)) {
+                            state.mode = Mode::Selection;
+                        }
                         circle.selected = true;
                         update = true;
                     } 
@@ -268,6 +285,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     state.update_vertex_buffer();
                     state.update_circle_vertex_buffer();
                 }
+
+                println!("{:?}", state.mode);
             }
             true
         }
@@ -275,6 +294,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
         // Scrolling implementation
         WindowEvent::MouseWheel { delta, .. } => {
             let zoom_speed = 0.1;
+            println!("{:?}", state.mode);
 
             match delta {
                 MouseScrollDelta::LineDelta(_, y) => {
