@@ -113,7 +113,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 }
                 KeyCode::Enter => {
                     if matches!(state.mode, Mode::Move(MoveMode::Selection)) {
-                        state.mode = Mode::Move(MoveMode::Move);
+                        state.mode = Mode::Move(MoveMode::SelectPoint);
                     }
                 }
                 _ => {}
@@ -204,7 +204,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if matches!(state.mode, Mode::DrawCircle | Mode::DrawLine(_)) => {
+        } if matches!(state.mode, Mode::DrawCircle | Mode::DrawLine(_) | Mode::Move(MoveMode::SelectPoint) | Mode::Move(MoveMode::Move(_))) => {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
                     DrawingState::Idle => match state.mode {
@@ -216,6 +216,34 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         Mode::DrawCircle => {
                             state.drawing_state = DrawingState::WaitingForRadius(position);
                             state.add_circle(position, 0.0, [1.0, 1.0, 1.0]);
+                        }
+                        Mode::Move(MoveMode::SelectPoint) => {
+                            // make this into it's own file later or put it into mod.rs in model
+
+                            state.mode = Mode::Move(MoveMode::Move(position));
+                        }
+                        Mode::Move(MoveMode::Move(starting_position)) => {
+                            // println!("{:?}, {:?}", position, starting_position);
+                            
+                            let diff1 = starting_position[0] - position[0];
+                            let diff2 = starting_position[1] - position[1];
+
+                            for line in &mut state.lines {
+                                if line.selected {
+                                    // state.move_line_to(starting_position, position);
+
+                                    line.vertices[0].position[0] -= diff1;
+                                    line.vertices[0].position[1] -= diff2;
+                                    line.vertices[1].position[0] -= diff1;
+                                    line.vertices[1].position[1] -= diff2;
+
+                                    line.selected = false;
+                                }
+                            }
+
+                            state.update_vertex_buffer();
+                            state.mode = Mode::Normal;
+                            // cancel mode, cancel selection color
                         }
                         _ => {}
                     },

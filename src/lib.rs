@@ -43,7 +43,7 @@ enum DrawingState {
     WaitingForRadius([f32; 2]),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 enum Mode {
     Normal,
     DrawLine(DrawLineMode),
@@ -58,10 +58,11 @@ enum DrawLineMode {
     Ortho, // 0, 90, 180, 270 degrees
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(PartialEq, PartialOrd, Debug)]
 enum MoveMode {
     Selection,
-    Move,
+    Move([f32; 2]),
+    SelectPoint
 }
 
 struct State<'a> {
