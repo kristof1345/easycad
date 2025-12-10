@@ -6,10 +6,11 @@ pub struct Circle {
     pub radius: f32,
     pub center: Vertex,
     pub selected: bool,
+    pub del: bool,
 }
 
 pub trait CircleOps {
-    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3]);
+    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool);
     fn update_circle(&mut self, position: [f32; 2]);
     fn cancel_drawing_circle(&mut self);
     fn unselect_circles(&mut self);
@@ -42,7 +43,7 @@ pub fn flatten_circles(circles: &mut Vec<Circle>) -> Vec<Vertex> {
 }
 
 impl<'a> CircleOps for State<'a> {
-    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3]) {
+    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool,) {
         let segments = 36;
 
         let all_vertices = flatten_circles(&mut self.circles);
@@ -56,7 +57,8 @@ impl<'a> CircleOps for State<'a> {
                     color,
                 },
                 radius,
-                selected: false,
+                selected: selected_flag,
+                del: del_flag,
             }
         });
 

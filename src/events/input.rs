@@ -1,6 +1,7 @@
 use crate::model::circle::CircleOps;
 use crate::model::line::LineOps;
 use crate::model::line::Line;
+use crate::model::circle::Circle;
 use crate::DrawLineMode;
 use crate::MoveMode;
 use crate::DrawingState;
@@ -202,23 +203,22 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
                 for line in &mut state.lines {
                     if line.selected {
-                        // state.move_line_to(starting_position, position);
-
-                        // NOT HERE - do this after selecting a point
-                        // create a new line
-                        // let new_line = line.clone();
-                        // line.selected = false;
-                        // move the new line and cancel moveing the original line
-
                         line.vertices[0].position[0] -= diff1;
                         line.vertices[0].position[1] -= diff2;
                         line.vertices[1].position[0] -= diff1;
                         line.vertices[1].position[1] -= diff2;
                     }
                 }
+                for circle in &mut state.circles {
+                    if circle.selected {
+                        circle.center.position[0] -= diff1;
+                        circle.center.position[1] -= diff2;
+                    }
+                }
 
                 state.update_vertex_buffer();
-                state.mode = Mode::Move(MoveMode::Move([world_x_pan, world_y_pan]))
+                state.update_circle_vertex_buffer();
+                state.mode = Mode::Move(MoveMode::Move([world_x_pan, world_y_pan]));
             }
 
             true
@@ -240,11 +240,12 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         }
                         Mode::DrawCircle => {
                             state.drawing_state = DrawingState::WaitingForRadius(position);
-                            state.add_circle(position, 0.0, [1.0, 1.0, 1.0]);
+                            state.add_circle(position, 0.0, [1.0, 1.0, 1.0], false, false);
                         }
                         // move lines from this selection point
                         Mode::Move(MoveMode::SelectPoint) => {
                             let mut new_lines = Vec::new();
+                            let mut new_circles = Vec::new();
 
                             state.mode = Mode::Move(MoveMode::Move(position));
 
@@ -257,9 +258,22 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                     new_lines.push(new_line);
                                 }
                             }
+                            for circle in &mut state.circles {
+                                if circle.selected {
+                                    let new_circle = circle.clone();
+                                    circle.selected = false;
+                                    circle.del = true;
+
+                                    new_circles.push(new_circle);
+                                }
+                            }
+
 
                             for new_line in new_lines {
                                 state.lines.push(new_line);
+                            }
+                            for new_circle in new_circles {
+                                state.add_circle([new_circle.center.position[0], new_circle.center.position[1]], new_circle.radius, new_circle.center.color, new_circle.selected, new_circle.del);
                             }
                         }
                         // second click: move the selected objects "HERE"
@@ -279,10 +293,20 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                     line.selected = false;
                                 }
                             }
+                            for circle in &mut state.circles {
+                                if circle.selected {
+                                    circle.center.position[0] -= diff1;
+                                    circle.center.position[1] -= diff2;
+
+                                    circle.selected = false;
+                                }
+                            }
 
                             state.lines.retain(|line: &Line| line.del != true);
+                            state.circles.retain(|circle: &Circle| circle.del != true);
 
                             state.update_vertex_buffer();
+                            state.update_circle_vertex_buffer();
                             state.mode = Mode::Normal;
                             // cancel mode, cancel selection color
                         }
