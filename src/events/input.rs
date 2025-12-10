@@ -1,5 +1,6 @@
 use crate::model::circle::CircleOps;
 use crate::model::line::LineOps;
+use crate::model::line::Line;
 use crate::DrawLineMode;
 use crate::MoveMode;
 use crate::DrawingState;
@@ -195,6 +196,30 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             if let DrawingState::WaitingForRadius(_start_pos) = state.drawing_state {
                 state.update_circle([world_x_pan, world_y_pan]);
             }
+            if let Mode::Move(MoveMode::Move(starting_position)) = state.mode {
+                let diff1 = starting_position[0] - world_x_pan;
+                let diff2 = starting_position[1] - world_y_pan;
+
+                for line in &mut state.lines {
+                    if line.selected {
+                        // state.move_line_to(starting_position, position);
+
+                        // NOT HERE - do this after selecting a point
+                        // create a new line
+                        // let new_line = line.clone();
+                        // line.selected = false;
+                        // move the new line and cancel moveing the original line
+
+                        line.vertices[0].position[0] -= diff1;
+                        line.vertices[0].position[1] -= diff2;
+                        line.vertices[1].position[0] -= diff1;
+                        line.vertices[1].position[1] -= diff2;
+                    }
+                }
+
+                state.update_vertex_buffer();
+                state.mode = Mode::Move(MoveMode::Move([world_x_pan, world_y_pan]))
+            }
 
             true
         }
@@ -217,11 +242,27 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.drawing_state = DrawingState::WaitingForRadius(position);
                             state.add_circle(position, 0.0, [1.0, 1.0, 1.0]);
                         }
+                        // move lines from this selection point
                         Mode::Move(MoveMode::SelectPoint) => {
-                            // make this into it's own file later or put it into mod.rs in model
+                            let mut new_lines = Vec::new();
 
                             state.mode = Mode::Move(MoveMode::Move(position));
+
+                            for line in &mut state.lines {
+                                if line.selected {
+                                    let new_line = line.clone();
+                                    line.selected = false;
+                                    line.del = true;
+
+                                    new_lines.push(new_line);
+                                }
+                            }
+
+                            for new_line in new_lines {
+                                state.lines.push(new_line);
+                            }
                         }
+                        // second click: move the selected objects "HERE"
                         Mode::Move(MoveMode::Move(starting_position)) => {
                             // println!("{:?}, {:?}", position, starting_position);
                             
@@ -230,8 +271,6 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
                             for line in &mut state.lines {
                                 if line.selected {
-                                    // state.move_line_to(starting_position, position);
-
                                     line.vertices[0].position[0] -= diff1;
                                     line.vertices[0].position[1] -= diff2;
                                     line.vertices[1].position[0] -= diff1;
@@ -240,6 +279,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                     line.selected = false;
                                 }
                             }
+
+                            state.lines.retain(|line: &Line| line.del != true);
 
                             state.update_vertex_buffer();
                             state.mode = Mode::Normal;

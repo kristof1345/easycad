@@ -5,6 +5,7 @@ use crate::{DrawLineMode, DrawingState, Mode, State};
 pub struct Line {
     pub vertices: [Vertex; 2],
     pub selected: bool,
+    pub del: bool,
 }
 
 // flatten lines vector into a flat vector of vertices
@@ -48,6 +49,7 @@ impl<'a> LineOps for State<'a> {
                 },
             ],
             selected: false,
+            del: false,
         });
 
         self.update_vertex_buffer();
