@@ -4,6 +4,7 @@ use crate::model::line::Line;
 use crate::model::circle::Circle;
 use crate::DrawLineMode;
 use crate::MoveMode;
+use crate::CopyMode;
 use crate::DrawingState;
 use crate::Mode;
 use crate::State;
@@ -37,6 +38,11 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 KeyCode::KeyC => {
                     if state.mode == Mode::Normal {
                         state.mode = Mode::DrawCircle;
+                    }
+                }
+                KeyCode::KeyK => {
+                    if state.mode == Mode::Normal {
+                        state.mode = Mode::Copy(CopyMode::Selection);
                     }
                 }
                 KeyCode::KeyM => {
@@ -116,6 +122,9 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 KeyCode::Enter => {
                     if matches!(state.mode, Mode::Move(MoveMode::Selection)) {
                         state.mode = Mode::Move(MoveMode::SelectPoint);
+                    }
+                    if matches!(state.mode, Mode::Copy(CopyMode::Selection)) {
+                        state.mode = Mode::Copy(CopyMode::SelectPoint);
                     }
                 }
                 _ => {}
@@ -197,22 +206,18 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             if let DrawingState::WaitingForRadius(_start_pos) = state.drawing_state {
                 state.update_circle([world_x_pan, world_y_pan]);
             }
-            if let Mode::Move(MoveMode::Move(starting_position)) = state.mode {
+            if let Mode::Move(MoveMode::Move(starting_position)) | Mode::Copy(CopyMode::Copy(starting_position)) = state.mode {
                 let diff1 = starting_position[0] - world_x_pan;
                 let diff2 = starting_position[1] - world_y_pan;
 
                 for line in &mut state.lines {
                     if line.selected {
-                        line.vertices[0].position[0] -= diff1;
-                        line.vertices[0].position[1] -= diff2;
-                        line.vertices[1].position[0] -= diff1;
-                        line.vertices[1].position[1] -= diff2;
+                        line.move_line(diff1, diff2);
                     }
                 }
                 for circle in &mut state.circles {
                     if circle.selected {
-                        circle.center.position[0] -= diff1;
-                        circle.center.position[1] -= diff2;
+                        circle.move_circle(diff1, diff2);
                     }
                 }
 
@@ -229,7 +234,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if matches!(state.mode, Mode::DrawCircle | Mode::DrawLine(_) | Mode::Move(MoveMode::SelectPoint) | Mode::Move(MoveMode::Move(_))) => {
+        } if matches!(state.mode, Mode::DrawCircle | Mode::DrawLine(_) | Mode::Move(MoveMode::SelectPoint) | Mode::Move(MoveMode::Move(_)) | Mode::Copy(CopyMode::SelectPoint) | Mode::Copy(CopyMode::Copy(_))) => {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
                     DrawingState::Idle => match state.mode {
@@ -243,17 +248,21 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.add_circle(position, 0.0, [1.0, 1.0, 1.0], false, false);
                         }
                         // move lines from this selection point
-                        Mode::Move(MoveMode::SelectPoint) => {
+                        Mode::Move(MoveMode::SelectPoint) | Mode::Copy(CopyMode::SelectPoint) => {
                             let mut new_lines = Vec::new();
                             let mut new_circles = Vec::new();
 
-                            state.mode = Mode::Move(MoveMode::Move(position));
+                            if matches!(state.mode, Mode::Move(_)) {
+                                state.mode = Mode::Move(MoveMode::Move(position));
+                            } else {
+                                state.mode = Mode::Copy(CopyMode::Copy(position));
+                            }
 
                             for line in &mut state.lines {
                                 if line.selected {
                                     let new_line = line.clone();
                                     line.selected = false;
-                                    line.del = true;
+                                    line.del = matches!(state.mode, Mode::Move(_));
 
                                     new_lines.push(new_line);
                                 }
@@ -262,7 +271,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                 if circle.selected {
                                     let new_circle = circle.clone();
                                     circle.selected = false;
-                                    circle.del = true;
+                                    circle.del = matches!(state.mode, Mode::Move(_));
 
                                     new_circles.push(new_circle);
                                 }
@@ -277,38 +286,32 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             }
                         }
                         // second click: move the selected objects "HERE"
-                        Mode::Move(MoveMode::Move(starting_position)) => {
-                            // println!("{:?}, {:?}", position, starting_position);
-                            
+                        Mode::Move(MoveMode::Move(starting_position)) | Mode::Copy(CopyMode::Copy(starting_position)) => {
                             let diff1 = starting_position[0] - position[0];
                             let diff2 = starting_position[1] - position[1];
 
                             for line in &mut state.lines {
                                 if line.selected {
-                                    line.vertices[0].position[0] -= diff1;
-                                    line.vertices[0].position[1] -= diff2;
-                                    line.vertices[1].position[0] -= diff1;
-                                    line.vertices[1].position[1] -= diff2;
+                                    line.move_line(diff1, diff2);
 
                                     line.selected = false;
                                 }
                             }
                             for circle in &mut state.circles {
                                 if circle.selected {
-                                    circle.center.position[0] -= diff1;
-                                    circle.center.position[1] -= diff2;
+                                    circle.move_circle(diff1, diff2);
 
                                     circle.selected = false;
                                 }
                             }
 
+                            // todo
                             state.lines.retain(|line: &Line| line.del != true);
                             state.circles.retain(|circle: &Circle| circle.del != true);
 
                             state.update_vertex_buffer();
                             state.update_circle_vertex_buffer();
                             state.mode = Mode::Normal;
-                            // cancel mode, cancel selection color
                         }
                         _ => {}
                     },
@@ -338,7 +341,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if matches!(state.mode, Mode::Normal | Mode::Selection | Mode::Move(MoveMode::Selection)) => {
+        } if matches!(state.mode, Mode::Normal | Mode::Selection | Mode::Move(MoveMode::Selection) | Mode::Copy(CopyMode::Selection)) => {
             if let Some(position) = state.cursor_position {
                 let mut update: bool = false;
 
@@ -351,7 +354,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     let d = point_segment_distance(position[0], position[1], a[0], a[1], b[0], b[1]);
 
                     if d < treshold && !line.selected {
-                        if !matches!(state.mode, Mode::Move(_)) {
+                        if !matches!(state.mode, Mode::Move(_) | Mode::Copy(_)) {
                             state.mode = Mode::Selection;
                         }
                         line.selected = true;
@@ -366,7 +369,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     let d = circle_hit(position[0], position[1], cx, cy, rad);
 
                     if d < treshold && !circle.selected {
-                        if !matches!(state.mode, Mode::Move(_)) {
+                        if !matches!(state.mode, Mode::Move(_) | Mode::Copy(_)) {
                             state.mode = Mode::Selection;
                         }
                         circle.selected = true;
@@ -378,8 +381,6 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     state.update_vertex_buffer();
                     state.update_circle_vertex_buffer();
                 }
-
-                println!("{:?}", state.mode);
             }
             true
         }

@@ -9,6 +9,13 @@ pub struct Circle {
     pub del: bool,
 }
 
+impl Circle {
+    pub fn move_circle(&mut self, dx: f32, dy: f32) {
+        self.center.position[0] -= dx;
+        self.center.position[1] -= dy;
+    }
+}
+
 pub trait CircleOps {
     fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool);
     fn update_circle(&mut self, position: [f32; 2]);

@@ -8,6 +8,15 @@ pub struct Line {
     pub del: bool,
 }
 
+impl Line {
+    pub fn move_line(&mut self, dx: f32, dy: f32) {
+        for v in &mut self.vertices {
+            v.position[0] -= dx;
+            v.position[1] -= dy;
+        }
+    }
+}
+
 // flatten lines vector into a flat vector of vertices
 pub fn flatten_lines(lines: &mut Vec<Line>) -> Vec<Vertex> {
     let mut flat = Vec::new();
@@ -33,6 +42,7 @@ pub trait LineOps {
     fn cancel_drawing_line(&mut self);
     fn unselect_lines(&mut self);
 }
+
 
 // add offsets
 impl<'a> LineOps for State<'a> {

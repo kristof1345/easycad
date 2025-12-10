@@ -50,6 +50,7 @@ enum Mode {
     DrawCircle,
     Selection,
     Move(MoveMode),
+    Copy(CopyMode)
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -62,8 +63,18 @@ enum DrawLineMode {
 enum MoveMode {
     Selection,
     Move([f32; 2]),
+    Copy([f32; 2]),
     SelectPoint
 }
+
+#[derive(PartialEq, PartialOrd, Debug)]
+enum CopyMode {
+    Selection,
+    Copy([f32; 2]),
+    SelectPoint
+}
+
+
 
 struct State<'a> {
     window: &'a Window,
@@ -510,6 +521,9 @@ pub async fn run() {
                                 }
                                 Mode::Move(_) => {
                                     state.window.set_cursor_icon(CursorIcon::Move);
+                                }
+                                Mode::Copy(_) => {
+                                    state.window.set_cursor_icon(CursorIcon::Copy);
                                 }
                             }
                         }
