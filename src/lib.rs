@@ -104,6 +104,7 @@ struct State<'a> {
 
     drawing_state: DrawingState,
     mode: Mode,
+    snap: Option<Vertex>,
 
     // cursor position in world coordinates
     cursor_position: Option<[f32; 2]>,
@@ -253,6 +254,8 @@ impl<'a> State<'a> {
             },
         ];
 
+        let snap = None;
+
         // let xy_axis = Vec::new();
         let axis_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("vertex buffer"),
@@ -311,6 +314,7 @@ impl<'a> State<'a> {
 
             drawing_state: DrawingState::Idle,
             mode: Mode::Normal,
+            snap,
             cursor_position: None,
             last_position_for_pan: None,
             last_screen_position_for_pan: None,

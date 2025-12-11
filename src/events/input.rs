@@ -184,6 +184,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
         // converting cursor position into world space and storing it
         WindowEvent::CursorMoved { position, .. } => {
+            let snap_treshold: f32 = 5.0 / state.camera.zoom;
             state.last_screen_position_for_pan = Some([position.x as f32, position.y as f32]);
 
             let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
@@ -199,6 +200,21 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
             state.cursor_position = Some([world_x_pan, world_y_pan]);
             state.last_position_for_pan = Some([world_x, world_y]);
+
+            // buggy - it wants to snap when the user is drawing a line. it wants to snap to the last vertex, the one that is being drawn
+            for line in &mut state.lines {
+                for vertex in line.vertices {
+                    let x = vertex.position[0];
+                    let y = vertex.position[1];
+
+                    let diffx = x - world_x_pan;
+                    let diffy = y - world_y_pan;
+
+                    if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
+                        println!("snap");
+                    }
+                }
+            }
 
             if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state {
                 state.update_line([world_x_pan, world_y_pan]);
@@ -225,6 +241,21 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 state.update_circle_vertex_buffer();
                 state.mode = Mode::Move(MoveMode::Move([world_x_pan, world_y_pan]));
             }
+
+            // // buggy - it wants to snap when the user is drawing a line. it wants to snap to the last vertex, the one that is being drawn
+            // for line in &mut state.lines {
+            //     for vertex in line.vertices {
+            //         let x = vertex.position[0];
+            //         let y = vertex.position[1];
+
+            //         let diffx = x - world_x_pan;
+            //         let diffy = y - world_y_pan;
+
+            //         if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
+            //             println!("snap");
+            //         }
+            //     }
+            // }
 
             true
         }
