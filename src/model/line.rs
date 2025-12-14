@@ -6,6 +6,7 @@ pub struct Line {
     pub vertices: [Vertex; 2],
     pub selected: bool,
     pub del: bool,
+    pub is_drawing: bool,
 }
 
 impl Line {
@@ -38,7 +39,7 @@ pub fn flatten_lines(lines: &mut Vec<Line>) -> Vec<Vertex> {
 
 pub trait LineOps {
     fn add_line(&mut self, start: [f32; 2], end: [f32; 2]);
-    fn update_line(&mut self, position: [f32; 2]);
+    fn update_line(&mut self, position: [f32; 2], is_drawing_flag: bool);
     fn cancel_drawing_line(&mut self);
     fn unselect_lines(&mut self);
 }
@@ -60,35 +61,40 @@ impl<'a> LineOps for State<'a> {
             ],
             selected: false,
             del: false,
+            is_drawing: false,
         });
 
         self.update_vertex_buffer();
     }
 
-    fn update_line(&mut self, position: [f32; 2]) {
+    fn update_line(&mut self, position: [f32; 2], is_drawing_flag: bool) {
         let world_x = position[0];
         let world_y = position[1];
 
-        let length = self.lines.len();
+        // let length = self.lines.len();
 
-        let prev_vertice = self.lines[(length - 1) as usize].vertices[0];
+        let last_line = self.lines.last_mut().unwrap();
+        let prev_vertice = last_line.vertices[0];
+
 
         if self.mode == Mode::DrawLine(DrawLineMode::Normal) {
-            self.lines[(length - 1) as usize].vertices[1] = Vertex {
+            last_line.vertices[1] = Vertex {
                 position: [world_x, world_y, 0.0],
                 color: [1.0, 1.0, 1.0],
             };
+            last_line.is_drawing = is_drawing_flag;
             // this section is buggy, I need to subtract the prev_vertice from world_x and world_y
+            // outdated - update to sit with last_line
         } else if self.mode == Mode::DrawLine(DrawLineMode::Ortho) {
             if (prev_vertice.position[0] - world_x).abs()
                 > (prev_vertice.position[1] - world_y).abs()
             {
-                self.lines[(length - 1) as usize].vertices[1] = Vertex {
+                last_line.vertices[1] = Vertex {
                     position: [world_x, prev_vertice.position[1], 0.0],
                     color: [1.0, 1.0, 1.0],
                 };
             } else {
-                self.lines[(length - 1) as usize].vertices[1] = Vertex {
+                last_line.vertices[1] = Vertex {
                     position: [prev_vertice.position[0], world_y, 0.0],
                     color: [1.0, 1.0, 1.0],
                 };

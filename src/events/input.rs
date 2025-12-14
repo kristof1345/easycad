@@ -203,21 +203,23 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
             // buggy - it wants to snap when the user is drawing a line. it wants to snap to the last vertex, the one that is being drawn
             for line in &mut state.lines {
-                for vertex in line.vertices {
-                    let x = vertex.position[0];
-                    let y = vertex.position[1];
-
-                    let diffx = x - world_x_pan;
-                    let diffy = y - world_y_pan;
-
-                    if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
-                        println!("snap");
+                if !line.is_drawing {
+                    for vertex in line.vertices {
+                        let x = vertex.position[0];
+                        let y = vertex.position[1];
+    
+                        let diffx = x - world_x_pan;
+                        let diffy = y - world_y_pan;
+    
+                        if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
+                            println!("snap");
+                        }
                     }
                 }
             }
 
             if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state {
-                state.update_line([world_x_pan, world_y_pan]);
+                state.update_line([world_x_pan, world_y_pan], true);
             }
             if let DrawingState::WaitingForRadius(_start_pos) = state.drawing_state {
                 state.update_circle([world_x_pan, world_y_pan]);
@@ -349,7 +351,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     DrawingState::WaitingForSecondPoint(_start_pos) => match state.mode {
                         Mode::DrawLine(DrawLineMode::Normal)
                         | Mode::DrawLine(DrawLineMode::Ortho) => {
-                            state.update_line(position);
+                            state.update_line(position, false);
                             state.drawing_state = DrawingState::Idle;
                         }
                         _ => {}
