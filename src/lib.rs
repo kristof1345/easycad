@@ -36,6 +36,25 @@ use dxf::entities::EntityType;
 
 use std::time::Instant as OtherInstant;
 
+const AXIS_COORDINATES: [Vertex; 4] = [
+            Vertex {
+                position: [50.1, 0.0, 0.0],
+                color: [255.0, 0.0, 0.0],
+            },
+            Vertex {
+                position: [0.0, 0.0, 0.0],
+                color: [255.0, 0.0, 0.0],
+            },
+            Vertex {
+                position: [0.0, 50.1, 0.0],
+                color: [1.0, 1.0, 1.0],
+            },
+            Vertex {
+                position: [0.0, 0.0, 0.0],
+                color: [1.0, 1.0, 1.0],
+            },
+        ];
+
 #[derive(Debug)]
 enum DrawingState {
     Idle,
@@ -96,11 +115,11 @@ struct State<'a> {
     lines: Vec<Line>,
     circles: Vec<Circle>,
     circle_indices: Vec<u32>,
-    // xy_axis: Vec<Line>,
+    indicators: Vec<Line>,
 
     num_vertices: u32,
     num_vertices_circle: u32,
-    // num_vertices_xy_axis: u32,
+    num_vertices_indicators: u32,
 
     drawing_state: DrawingState,
     mode: Mode,
@@ -235,32 +254,33 @@ impl<'a> State<'a> {
             contents: &[],
         });
 
-        let axis_coordinates = [
-            Vertex {
-                position: [50.1, 0.0, 0.0],
-                color: [255.0, 0.0, 0.0],
-            },
-            Vertex {
-                position: [0.0, 0.0, 0.0],
-                color: [255.0, 0.0, 0.0],
-            },
-            Vertex {
-                position: [0.0, 50.1, 0.0],
-                color: [1.0, 1.0, 1.0],
-            },
-            Vertex {
-                position: [0.0, 0.0, 0.0],
-                color: [1.0, 1.0, 1.0],
-            },
-        ];
+        // let axis_coordinates = [
+        //     Vertex {
+        //         position: [50.1, 0.0, 0.0],
+        //         color: [255.0, 0.0, 0.0],
+        //     },
+        //     Vertex {
+        //         position: [0.0, 0.0, 0.0],
+        //         color: [255.0, 0.0, 0.0],
+        //     },
+        //     Vertex {
+        //         position: [0.0, 50.1, 0.0],
+        //         color: [1.0, 1.0, 1.0],
+        //     },
+        //     Vertex {
+        //         position: [0.0, 0.0, 0.0],
+        //         color: [1.0, 1.0, 1.0],
+        //     },
+        // ];
 
         let snap = None;
 
-        // let xy_axis = Vec::new();
+        let indicators = Vec::new();
+
         let axis_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("vertex buffer"),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            contents: bytemuck::cast_slice(&axis_coordinates),
+            contents: bytemuck::cast_slice(&AXIS_COORDINATES),
         });
 
         let circle_indices = Vec::new();
@@ -306,11 +326,11 @@ impl<'a> State<'a> {
             lines,
             circles,
             index_buffer_circle,
-            // xy_axis,
+            indicators,
 
             num_vertices: 0,
             num_vertices_circle: 0,
-            // num_vertices_xy_axis: 0,
+            num_vertices_indicators: 0,
 
             drawing_state: DrawingState::Idle,
             mode: Mode::Normal,
@@ -368,16 +388,22 @@ impl<'a> State<'a> {
         });
     }
 
-    // pub fn update_axis_vertex_buffer(&mut self) {
-    //     self.axis_vertex_buffer = self
-    //         .device
-    //         .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-    //             label: Some("axis vertex buffer"),
-    //             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-    //             contents: bytemuck::cast_slice(&flatten_lines(&self.xy_axis)),
-    //         });
-    //     self.num_vertices = (self.xy_axis.len() as u32) * 2;
-    // }
+    pub fn update_axis_vertex_buffer(&mut self) {
+        let flat_indicators = flatten_lines(&mut self.indicators);
+
+        let mut out = Vec::with_capacity(4 + flat_indicators.len());
+        out.extend_from_slice(&AXIS_COORDINATES);
+        out.extend_from_slice(&flat_indicators);
+
+        self.axis_vertex_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("axis vertex buffer"),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                contents: bytemuck::cast_slice(&out),
+            });
+        self.num_vertices_indicators = (out.len() as u32) * 2;
+    }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
         self.window().request_redraw();
@@ -419,7 +445,7 @@ impl<'a> State<'a> {
             println!("entity: {:?}", e);
             match e.specific {
                 EntityType::Line(ref line) => {
-                    self.add_line([line.p1.x as f32, line.p1.y as f32], [line.p2.x as f32, line.p2.y as f32]);
+                    self.add_line([line.p1.x as f32, line.p1.y as f32], [line.p2.x as f32, line.p2.y as f32], true);
                 }
                 EntityType::Circle(ref circle) => {
                     self.add_circle([circle.center.x as f32, circle.center.y as f32], circle.radius as f32, [1.0, 1.0, 1.0], false, false);

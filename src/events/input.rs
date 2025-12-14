@@ -274,7 +274,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         Mode::DrawLine(DrawLineMode::Normal)
                         | Mode::DrawLine(DrawLineMode::Ortho) => {
                             state.drawing_state = DrawingState::WaitingForSecondPoint(position);
-                            state.add_line(position, position);
+                            state.add_line(position, position, true);
                         }
                         Mode::DrawCircle => {
                             state.drawing_state = DrawingState::WaitingForRadius(position);

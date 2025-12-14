@@ -38,7 +38,7 @@ pub fn flatten_lines(lines: &mut Vec<Line>) -> Vec<Vertex> {
 }
 
 pub trait LineOps {
-    fn add_line(&mut self, start: [f32; 2], end: [f32; 2]);
+    fn add_line(&mut self, start: [f32; 2], end: [f32; 2], is_drawing_flag: bool);
     fn update_line(&mut self, position: [f32; 2], is_drawing_flag: bool);
     fn cancel_drawing_line(&mut self);
     fn unselect_lines(&mut self);
@@ -47,7 +47,7 @@ pub trait LineOps {
 
 // add offsets
 impl<'a> LineOps for State<'a> {
-    fn add_line(&mut self, start: [f32; 2], end: [f32; 2]) {
+    fn add_line(&mut self, start: [f32; 2], end: [f32; 2], is_drawing_flag: bool) {
         self.lines.push(Line {
             vertices: [
                 Vertex {
@@ -61,7 +61,7 @@ impl<'a> LineOps for State<'a> {
             ],
             selected: false,
             del: false,
-            is_drawing: false,
+            is_drawing: is_drawing_flag,
         });
 
         self.update_vertex_buffer();
