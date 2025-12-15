@@ -201,10 +201,21 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state.cursor_position = Some([world_x_pan, world_y_pan]);
             state.last_position_for_pan = Some([world_x, world_y]);
 
-            // buggy - it wants to snap when the user is drawing a line. it wants to snap to the last vertex, the one that is being drawn
+            state.snap = None;
+            // let mut best_dist = snap_treshold;
+
             for line in &mut state.lines {
                 if !line.is_drawing {
-                    for vertex in line.vertices {
+                    for vertex in &line.vertices {
+                        // let dx = vertex.position[0] - world_x_pan;
+                        // let dy = vertex.position[1] - world_y_pan;
+                        // let dist = (dx * dx + dy * dy).sqrt();
+
+                        // if dist < best_dist {
+                        //     best_dist = dist;
+                        //     state.snap = Some(*vertex);
+                        // }
+
                         let x = vertex.position[0];
                         let y = vertex.position[1];
     
@@ -213,7 +224,27 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
     
                         if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
                             println!("snap");
+                            // turn on snap
+                            state.snap = Some(*vertex);
+                            break;
                         }
+                    }
+                }
+            }
+
+            match state.snap {
+                Some(_vertex) => {
+                    // there's a bug if you zoom out while there's snap turned on, should dissapear once i figure how to reset snap
+                    state.move_indicators_to_cursor([world_x_pan, world_y_pan]);
+                    state.update_axis_vertex_buffer();
+                }
+                None => {
+                    for indicator in &mut state.indicators {
+                        indicator.vertices[0].position[0] = 0.0;
+                        indicator.vertices[0].position[1] = 0.0;
+
+                        indicator.vertices[1].position[0] = 0.0;
+                        indicator.vertices[1].position[1] = 0.0;
                     }
                 }
             }

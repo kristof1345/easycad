@@ -254,28 +254,9 @@ impl<'a> State<'a> {
             contents: &[],
         });
 
-        // let axis_coordinates = [
-        //     Vertex {
-        //         position: [50.1, 0.0, 0.0],
-        //         color: [255.0, 0.0, 0.0],
-        //     },
-        //     Vertex {
-        //         position: [0.0, 0.0, 0.0],
-        //         color: [255.0, 0.0, 0.0],
-        //     },
-        //     Vertex {
-        //         position: [0.0, 50.1, 0.0],
-        //         color: [1.0, 1.0, 1.0],
-        //     },
-        //     Vertex {
-        //         position: [0.0, 0.0, 0.0],
-        //         color: [1.0, 1.0, 1.0],
-        //     },
-        // ];
-
         let snap = None;
 
-        let indicators = Vec::new();
+        let mut indicators = Vec::new();
 
         let axis_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("vertex buffer"),
@@ -305,7 +286,24 @@ impl<'a> State<'a> {
         );
 
         let dragging = false;
-        
+
+        for _ in 0..4 {
+            indicators.push(Line {
+                vertices: [
+                    Vertex {
+                        position: [0.0, 0.0, 0.0],
+                        color: [1.0, 1.0, 1.0] },
+                    Vertex {
+                        position: [0.0, 0.0, 0.0],
+                        color: [1.0, 1.0, 1.0]
+                    }
+                ],
+                selected: false,
+                del: false,
+                is_drawing: false,
+            });
+        }
+
         Self {
             window,
             queue,
@@ -402,7 +400,52 @@ impl<'a> State<'a> {
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 contents: bytemuck::cast_slice(&out),
             });
-        self.num_vertices_indicators = (out.len() as u32) * 2;
+        self.num_vertices_indicators = out.len() as u32;
+    }
+
+    pub fn move_indicators_to_cursor(&mut self, point: [f32; 2]) {
+        let treshold: f32 = 10.0;
+
+        for i in 0..4 {
+            let mut x1: f32 = 0.0;
+            let mut x2: f32 = 0.0;
+            let mut y1: f32 = 0.0;
+            let mut y2: f32 = 0.0;
+
+            match i {
+                0 => {
+                    y1 = point[1] * self.camera.zoom + treshold;
+                    y2 = point[1] * self.camera.zoom + treshold;
+                    x1 = point[0] * self.camera.zoom + treshold;
+                    x2 = point[0] * self.camera.zoom - treshold;
+                }
+                1 => {
+                    y1 = point[1] * self.camera.zoom + treshold;
+                    y2 = point[1] * self.camera.zoom - treshold;
+                    x1 = point[0] * self.camera.zoom - treshold;
+                    x2 = point[0] * self.camera.zoom - treshold;
+                }
+                2 => {
+                    y1 = point[1] * self.camera.zoom - treshold;
+                    y2 = point[1] * self.camera.zoom - treshold;
+                    x1 = point[0] * self.camera.zoom + treshold;
+                    x2 = point[0] * self.camera.zoom - treshold;
+                }
+                3 => {
+                    y1 = point[1] * self.camera.zoom + treshold;
+                    y2 = point[1] * self.camera.zoom - treshold;
+                    x1 = point[0] * self.camera.zoom + treshold;
+                    x2 = point[0] * self.camera.zoom + treshold;
+                }
+                _ => {}
+            }
+
+            self.indicators[i].vertices[0].position[0] = x1;
+            self.indicators[i].vertices[0].position[1] = y1;
+
+            self.indicators[i].vertices[1].position[0] = x2;
+            self.indicators[i].vertices[1].position[1] = y2;
+        }
     }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {

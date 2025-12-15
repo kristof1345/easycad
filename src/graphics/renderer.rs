@@ -58,13 +58,14 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
             occlusion_query_set: None,
         });
         
-        // state.update_axis_vertex_buffer();
+        state.update_axis_vertex_buffer();
+        // println!("{:?}", state.num_vertices_indicators);
 
         // update the draw method to get the right amount of indicies once we get the logic of the indicators down
         render_pass.set_pipeline(&state.xy_axis_render_pipeline);
         render_pass.set_vertex_buffer(0, state.axis_vertex_buffer.slice(..));
         render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
-        render_pass.draw(0..4, 0..1);
+        render_pass.draw(0..state.num_vertices_indicators, 0..1);
 
         render_pass.set_pipeline(&state.render_pipeline);
         render_pass.set_vertex_buffer(0, state.vertex_buffer.slice(..));
