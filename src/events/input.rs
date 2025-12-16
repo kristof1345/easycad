@@ -2,6 +2,7 @@ use crate::model::circle::CircleOps;
 use crate::model::line::LineOps;
 use crate::model::line::Line;
 use crate::model::circle::Circle;
+use crate::graphics::camera::Camera;
 use crate::DrawLineMode;
 use crate::MoveMode;
 use crate::CopyMode;
@@ -185,46 +186,32 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
         // converting cursor position into world space and storing it
         WindowEvent::CursorMoved { position, .. } => {
             let snap_treshold: f32 = 5.0 / state.camera.zoom;
-            state.last_screen_position_for_pan = Some([position.x as f32, position.y as f32]);
+            let screen = [position.x as f32, position.y as f32];
+            state.last_screen_position_for_pan = Some(screen);
 
-            let cen_x = position.x as f32 - (state.size.width as f32 / 2.0);
-            let cen_y = (state.size.height as f32 / 2.0) - position.y as f32;
+            let world = screen_to_world(screen[0], screen[1], state.size, &state.camera);
 
-            let zoom = state.camera.zoom;
-            let pan_x = state.camera.x_offset;
-            let pan_y = state.camera.y_offset;
-            let world_x = cen_x / zoom;
-            let world_y = cen_y / zoom;
-            let world_x_pan = cen_x / zoom + pan_x;
-            let world_y_pan = cen_y / zoom + pan_y;
+            state.cursor_position = Some(world);
 
-            state.cursor_position = Some([world_x_pan, world_y_pan]);
-            state.last_position_for_pan = Some([world_x, world_y]);
+            let cen_x = screen[0] - state.size.width as f32 / 2.0;
+            let cen_y = state.size.height as f32 / 2.0 - screen[1];
+            state.last_position_for_pan = Some([
+                cen_x / state.camera.zoom,
+                cen_y / state.camera.zoom,
+            ]);
 
             state.snap = None;
-            // let mut best_dist = snap_treshold;
 
             for line in &mut state.lines {
                 if !line.is_drawing {
                     for vertex in &line.vertices {
-                        // let dx = vertex.position[0] - world_x_pan;
-                        // let dy = vertex.position[1] - world_y_pan;
-                        // let dist = (dx * dx + dy * dy).sqrt();
-
-                        // if dist < best_dist {
-                        //     best_dist = dist;
-                        //     state.snap = Some(*vertex);
-                        // }
-
                         let x = vertex.position[0];
                         let y = vertex.position[1];
     
-                        let diffx = x - world_x_pan;
-                        let diffy = y - world_y_pan;
+                        let diffx = x - world[0];
+                        let diffy = y - world[1];
     
                         if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
-                            println!("snap");
-                            // turn on snap
                             state.snap = Some(*vertex);
                             break;
                         }
@@ -235,7 +222,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             match state.snap {
                 Some(_vertex) => {
                     // there's a bug if you zoom out while there's snap turned on, should dissapear once i figure how to reset snap
-                    state.move_indicators_to_cursor([world_x_pan, world_y_pan]);
+                    state.move_indicators_to_cursor([world[0], world[1]]);
                     state.update_axis_vertex_buffer();
                 }
                 None => {
@@ -250,14 +237,14 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             }
 
             if let DrawingState::WaitingForSecondPoint(_start_pos) = state.drawing_state {
-                state.update_line([world_x_pan, world_y_pan], true);
+                state.update_line([world[0], world[1]], true);
             }
             if let DrawingState::WaitingForRadius(_start_pos) = state.drawing_state {
-                state.update_circle([world_x_pan, world_y_pan]);
+                state.update_circle([world[0], world[1]]);
             }
             if let Mode::Move(MoveMode::Move(starting_position)) | Mode::Copy(CopyMode::Copy(starting_position)) = state.mode {
-                let diff1 = starting_position[0] - world_x_pan;
-                let diff2 = starting_position[1] - world_y_pan;
+                let diff1 = starting_position[0] - world[0];
+                let diff2 = starting_position[1] - world[1];
 
                 for line in &mut state.lines {
                     if line.selected {
@@ -272,23 +259,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
                 state.update_vertex_buffer();
                 state.update_circle_vertex_buffer();
-                state.mode = Mode::Move(MoveMode::Move([world_x_pan, world_y_pan]));
+                state.mode = Mode::Move(MoveMode::Move([world[0], world[1]]));
             }
-
-            // // buggy - it wants to snap when the user is drawing a line. it wants to snap to the last vertex, the one that is being drawn
-            // for line in &mut state.lines {
-            //     for vertex in line.vertices {
-            //         let x = vertex.position[0];
-            //         let y = vertex.position[1];
-
-            //         let diffx = x - world_x_pan;
-            //         let diffy = y - world_y_pan;
-
-            //         if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
-            //             println!("snap");
-            //         }
-            //     }
-            // }
 
             true
         }
@@ -452,22 +424,30 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
         // Scrolling implementation
         WindowEvent::MouseWheel { delta, .. } => {
             let zoom_speed = 0.1;
-            println!("{:?}", state.mode);
 
-            match delta {
+            let factor = match delta {
                 MouseScrollDelta::LineDelta(_, y) => {
-                    let factor = 1.0 + zoom_speed * y.signum();
-                    // state.camera.zoom(factor);
-                    state.camera.zoom_at_cursor(
-                        factor,
-                        state.cursor_position.unwrap()[0],
-                        state.cursor_position.unwrap()[1],
-                    );
+                    1.0 + zoom_speed * y.signum()
                 }
                 MouseScrollDelta::PixelDelta(pos) => {
-                    state.camera.zoom(1.0 + zoom_speed * pos.y.signum() as f32);
-                    println!("zoom two");
+                    1.0 + zoom_speed * pos.y.signum() as f32
                 }
+            };
+
+            if let Some([sx, sy]) = state.last_screen_position_for_pan {
+                let before = screen_to_world(sx, sy, state.size, &state.camera);
+
+                state.camera.zoom(factor);
+
+                let after = screen_to_world(sx, sy, state.size, &state.camera);
+
+                state.camera.pan(before[0] - after[0], before[1] - after[1]);
+
+                state.cursor_position = Some(before);
+                state.last_position_for_pan = Some([
+                    (sx - state.size.width as f32 / 2.0) / state.camera.zoom,
+                    (state.size.height as f32 / 2.0 - sy) / state.camera.zoom,
+                ]);
             }
 
             let uniform = state
@@ -517,4 +497,19 @@ fn circle_hit(px: f32, py: f32, cx: f32, cy: f32, r: f32) -> f32 {
     let dist = (dx*dx + dy*dy).sqrt();
 
     (dist - r).abs()
+}
+
+fn screen_to_world(
+    screen_x: f32,
+    screen_y: f32,
+    size: winit::dpi::PhysicalSize<u32>,
+    camera: &Camera,
+) -> [f32; 2] {
+    let cen_x = screen_x - size.width as f32 / 2.0;
+    let cen_y = size.height as f32 / 2.0 - screen_y;
+
+    [
+        cen_x / camera.zoom + camera.x_offset,
+        cen_y / camera.zoom + camera.y_offset,
+    ]
 }
