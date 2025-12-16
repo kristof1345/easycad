@@ -65,9 +65,10 @@ enum DrawingState {
 #[derive(Debug, PartialEq)]
 enum Mode {
     Normal,
-    DrawLine(DrawLineMode),
     DrawCircle,
     Selection,
+    Delete,
+    DrawLine(DrawLineMode),
     Move(MoveMode),
     Copy(CopyMode)
 }
@@ -597,6 +598,9 @@ pub async fn run() {
                                 }
                                 Mode::Copy(_) => {
                                     state.window.set_cursor_icon(CursorIcon::Copy);
+                                }
+                                Mode::Delete => {
+                                    state.window.set_cursor_icon(CursorIcon::Default);
                                 }
                             }
                         }

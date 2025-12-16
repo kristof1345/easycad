@@ -87,6 +87,17 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         state.mode = Mode::DrawLine(DrawLineMode::Normal);
                     }
                 }
+                KeyCode::Delete => {
+                    if state.mode == Mode::Normal {
+                        state.mode = Mode::Delete;
+                    } else if state.mode == Mode::Selection {
+                        state.lines.retain(|line| line.selected != true);
+                        state.circles.retain(|circle| circle.selected != true);
+    
+                        state.update_vertex_buffer();
+                        state.update_circle_vertex_buffer();
+                    }
+                }
                 KeyCode::Escape => {
                     if state.mode == Mode::DrawLine(DrawLineMode::Normal)
                         || state.mode == Mode::DrawLine(DrawLineMode::Ortho)
@@ -377,7 +388,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if matches!(state.mode, Mode::Normal | Mode::Selection | Mode::Move(MoveMode::Selection) | Mode::Copy(CopyMode::Selection)) => {
+        } if matches!(state.mode, Mode::Normal | Mode::Selection | Mode::Move(MoveMode::Selection) | Mode::Copy(CopyMode::Selection) | Mode::Delete) => {
             if let Some(position) = state.cursor_position {
                 let mut update: bool = false;
 
@@ -390,7 +401,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     let d = point_segment_distance(position[0], position[1], a[0], a[1], b[0], b[1]);
 
                     if d < treshold && !line.selected {
-                        if !matches!(state.mode, Mode::Move(_) | Mode::Copy(_)) {
+                        if !matches!(state.mode, Mode::Move(_) | Mode::Copy(_) | Mode::Delete) {
                             state.mode = Mode::Selection;
                         }
                         line.selected = true;
@@ -405,7 +416,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     let d = circle_hit(position[0], position[1], cx, cy, rad);
 
                     if d < treshold && !circle.selected {
-                        if !matches!(state.mode, Mode::Move(_) | Mode::Copy(_)) {
+                        if !matches!(state.mode, Mode::Move(_) | Mode::Copy(_) | Mode::Delete) {
                             state.mode = Mode::Selection;
                         }
                         circle.selected = true;
@@ -414,6 +425,10 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 }
 
                 if update {
+                    if state.mode == Mode::Delete {
+                        state.lines.retain(|line| line.selected != true);
+                        state.circles.retain(|circle| circle.selected != true);
+                    }
                     state.update_vertex_buffer();
                     state.update_circle_vertex_buffer();
                 }

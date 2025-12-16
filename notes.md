@@ -38,6 +38,7 @@ This is part of a bigger bug:
 potential solution: recalculate the cursor position on zoom
 
 ### What’s actually happening
+##### commit 59
 Your zoom is cursor-centric
 Your pan uses last_position_for_pan
 last_position_for_pan is only updated in CursorMoved
@@ -50,7 +51,7 @@ Immediately pans without moving the mouse
 👉 first pan delta becomes huge
 👉 everything “jumps”
 
-# Solved!!!!
+# Solved!!!! - commit 59
 Why this works
 Zoom changes world→screen mapping
 We:
