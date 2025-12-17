@@ -49,6 +49,25 @@ pub fn flatten_circles(circles: &mut Vec<Circle>) -> Vec<Vertex> {
     flat
 }
 
+pub fn flatten_circles_for_snap(circles: &mut Vec<Circle>) -> Vec<Vertex> {
+    let mut flat = Vec::new();
+
+    for circle in circles.iter_mut() {
+        let x = circle.center.position[0];
+        let y = circle.center.position[1];
+
+        flat.extend([
+            Vertex{ position: [x, y + circle.radius, 0.0], color: circle.center.color }, // vertex above venter point
+            Vertex { position: [x - circle.radius, y, 0.0], color: circle.center.color }, // vertex to the left of center point
+            Vertex { position: [x, y - circle.radius, 0.0], color: circle.center.color  }, // vertex below venter point
+            Vertex { position: [x + circle.radius, y, 0.0], color: circle.center.color }, // vertex to the right of venter point
+            circle.center
+        ]);
+    }
+
+    flat
+}
+
 impl<'a> CircleOps for State<'a> {
     fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool,) {
         let segments = 36;

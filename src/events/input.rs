@@ -1,8 +1,10 @@
 use crate::model::circle::CircleOps;
+use crate::model::circle::flatten_circles_for_snap;
 use crate::model::line::LineOps;
 use crate::model::line::Line;
 use crate::model::circle::Circle;
 use crate::graphics::camera::Camera;
+use crate::graphics::vertex::Vertex;
 use crate::DrawLineMode;
 use crate::MoveMode;
 use crate::CopyMode;
@@ -215,7 +217,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
             for line in &mut state.lines {
                 if !line.is_drawing {
-                    for vertex in &line.vertices {
+                    for vertex in line.vertices {
                         let x = vertex.position[0];
                         let y = vertex.position[1];
     
@@ -223,10 +225,24 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         let diffy = y - world[1];
     
                         if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
-                            state.snap = Some(*vertex);
+                            state.snap = Some(vertex);
                             break;
                         }
                     }
+                }
+            }
+
+            let circle_snap_vertexes = flatten_circles_for_snap(&mut state.circles);
+            for vertex in circle_snap_vertexes {
+                let x = vertex.position[0];
+                let y = vertex.position[1];
+
+                let diffx = x - world[0];
+                let diffy = y - world[1];
+
+                if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
+                    state.snap = Some(vertex);
+                    break;
                 }
             }
 
