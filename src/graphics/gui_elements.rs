@@ -8,7 +8,7 @@ pub enum UiAction {
     SaveFile,
 }
 
-pub fn GUI(ui: &Context) -> Option<UiAction> {
+pub fn gui(ui: &Context) -> Option<UiAction> {
     let mut action = None;
 
     egui::Area::new(egui::Id::new("feature area"))

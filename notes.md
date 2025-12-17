@@ -63,3 +63,34 @@ Now:
 Panning right after zoom = smooth
 No jump
 No need to move the mouse
+
+
+# notes
+1. 'snap' in 'states' is right now a type 'Vertex' which, in retrospect, might be too much. We only need an x and an y position for now from snap so I will change it into a '[f32; 2]'.
+In case we need color for snap, I will change it back.
+
+2.
+In 'update_line'
+        // this line is problematic once we get into more serious deletion and absolutely criminal is we get into editing a line... 
+        let last_line = self.lines.last_mut().unwrap();
+
+Instead...
+Implementing u64 IDs. How? Just a counter that keeps on counting. It's important to keep on counting no matter what, never look back. 
+
+when implementing line IDs don't forget to use:
+
+``` rust
+let last_line = &mut self.lines[i as usize];
+```
+
+becuase if you don't use ```&mut``` it will just copy the value out of the vector and not change it.
+
+Footgun: Indexes might mengle up when you get into editing lines. Becuase of delete.
+
+3. Later down the line it might be better to use a HashMap for lines and circles instead of a Vec 
+
+
+
+# Important
+12/17/2025:
+Line IDs are commented out for now.

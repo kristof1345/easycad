@@ -3,6 +3,7 @@ use crate::{DrawLineMode, DrawingState, Mode, State};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Line {
+    // pub id: u64,
     pub vertices: [Vertex; 2],
     pub selected: bool,
     pub del: bool,
@@ -48,6 +49,9 @@ pub trait LineOps {
 // add offsets
 impl<'a> LineOps for State<'a> {
     fn add_line(&mut self, start: [f32; 2], end: [f32; 2], is_drawing_flag: bool) {
+        // let id = self.next_line_id;
+        // self.next_line_id += 1;
+
         self.lines.push(Line {
             vertices: [
                 Vertex {
@@ -59,10 +63,15 @@ impl<'a> LineOps for State<'a> {
                     color: [1.0, 1.0, 1.0],
                 },
             ],
+            // id,
             selected: false,
             del: false,
             is_drawing: is_drawing_flag,
         });
+
+        let index = self.lines.len() - 1;
+        self.active_line_index = Some(index);
+        // self.active_line_id = Some(id);
 
         self.update_vertex_buffer();
     }
@@ -71,36 +80,53 @@ impl<'a> LineOps for State<'a> {
         let world_x = position[0];
         let world_y = position[1];
 
-        // let length = self.lines.len();
-
-        let last_line = self.lines.last_mut().unwrap();
-        let prev_vertice = last_line.vertices[0];
-
-
         if self.mode == Mode::DrawLine(DrawLineMode::Normal) {
-            last_line.vertices[1] = Vertex {
-                position: [world_x, world_y, 0.0],
-                color: [1.0, 1.0, 1.0],
-            };
-            last_line.is_drawing = is_drawing_flag;
-            // this section is buggy, I need to subtract the prev_vertice from world_x and world_y
-            // outdated - update to sit with last_line
+            if let Some(i) = self.active_line_index { 
+                // println!("{:?}", self.active_line_index);
+                // println!("{:?}", self.active_line_id);
+                let last_line = &mut self.lines[i as usize];
+                // println!("{:?}", last_line);
+
+                last_line.vertices[1] = Vertex {
+                    position: [world_x, world_y, 0.0],
+                    color: [1.0, 1.0, 1.0],
+                };
+                last_line.is_drawing = is_drawing_flag;
+
+                if !is_drawing_flag {
+                    // self.active_line_id = None;
+                    self.active_line_index = None;
+                }
+            }
         } else if self.mode == Mode::DrawLine(DrawLineMode::Ortho) {
-            if (prev_vertice.position[0] - world_x).abs()
-                > (prev_vertice.position[1] - world_y).abs()
-            {
-                last_line.vertices[1] = Vertex {
-                    position: [world_x, prev_vertice.position[1], 0.0],
-                    color: [1.0, 1.0, 1.0],
-                };
-            } else {
-                last_line.vertices[1] = Vertex {
-                    position: [prev_vertice.position[0], world_y, 0.0],
-                    color: [1.0, 1.0, 1.0],
-                };
+            if let Some(i) = self.active_line_index { 
+                let last_line = &mut self.lines[i as usize];
+                let prev_vertice = last_line.vertices[0];
+
+                if (prev_vertice.position[0] - world_x).abs()
+                    > (prev_vertice.position[1] - world_y).abs()
+                {
+                    last_line.vertices[1] = Vertex {
+                        position: [world_x, prev_vertice.position[1], 0.0],
+                        color: [1.0, 1.0, 1.0],
+                    };
+                    last_line.is_drawing = is_drawing_flag;
+                } else {
+                    last_line.vertices[1] = Vertex {
+                        position: [prev_vertice.position[0], world_y, 0.0],
+                        color: [1.0, 1.0, 1.0],
+                    };
+                    last_line.is_drawing = is_drawing_flag;
+                }
+
+                if !is_drawing_flag {
+                    // self.active_line_id = None;
+                    self.active_line_index = None;
+                }
             }
         }
 
+        // println!("{:?}", self.lines);
         self.update_vertex_buffer();
     }
 

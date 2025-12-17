@@ -18,7 +18,7 @@ use model::line::flatten_lines;
 use model::circle::flatten_circles;
 
 use gui::EguiRenderer;
-use gui_elements::GUI;
+use gui_elements::gui;
 use egui_wgpu::wgpu::util::DeviceExt;
 use egui_winit::winit::{
     event::*,
@@ -69,8 +69,8 @@ enum Mode {
     Selection,
     Delete,
     DrawLine(DrawLineMode),
-    Move(MoveMode),
-    Copy(CopyMode)
+    Move(FuncState),
+    Copy(FuncState)
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -80,21 +80,12 @@ enum DrawLineMode {
 }
 
 #[derive(PartialEq, PartialOrd, Debug)]
-enum MoveMode {
+enum FuncState {
     Selection,
     Move([f32; 2]),
     Copy([f32; 2]),
     SelectPoint
 }
-
-#[derive(PartialEq, PartialOrd, Debug)]
-enum CopyMode {
-    Selection,
-    Copy([f32; 2]),
-    SelectPoint
-}
-
-
 
 struct State<'a> {
     window: &'a Window,
@@ -114,6 +105,10 @@ struct State<'a> {
     axis_vertex_buffer: wgpu::Buffer,
 
     lines: Vec<Line>,
+    // next_line_id: u64,
+    active_line_index: Option<usize>,
+    // active_line_id: Option<u64>,
+
     circles: Vec<Circle>,
     circle_indices: Vec<u32>,
     indicators: Vec<Line>,
@@ -124,7 +119,7 @@ struct State<'a> {
 
     drawing_state: DrawingState,
     mode: Mode,
-    snap: Option<Vertex>,
+    snap: Option<[f32; 2]>,
 
     // cursor position in world coordinates
     cursor_position: Option<[f32; 2]>,
@@ -288,7 +283,7 @@ impl<'a> State<'a> {
 
         let dragging = false;
 
-        for _ in 0..4 {
+        for _i in 0..4 {
             indicators.push(Line {
                 vertices: [
                     Vertex {
@@ -299,6 +294,7 @@ impl<'a> State<'a> {
                         color: [1.0, 1.0, 1.0]
                     }
                 ],
+                // id: i,
                 selected: false,
                 del: false,
                 is_drawing: false,
@@ -323,6 +319,10 @@ impl<'a> State<'a> {
             axis_vertex_buffer,
 
             lines,
+            // next_line_id: 0,
+            active_line_index: None,
+            // active_line_id: None,
+
             circles,
             index_buffer_circle,
             indicators,
@@ -511,34 +511,6 @@ pub async fn run() {
     event_loop.set_control_flow(ControlFlow::Poll);
 
     let mut state = State::new(&window).await;
-    
-    // state.xy_axis.push(Line {
-    //     vertices: [
-    //         Vertex {
-    //             position: [50.0, 0.0, 0.0],
-    //             color: [1.0, 1.0, 1.0],
-    //         },
-    //         Vertex {
-    //             position: [0.0, 0.0, 0.0],
-    //             color: [1.0, 1.0, 1.0],
-    //         },
-    //     ],
-    // });
-    // state.xy_axis.push(Line {
-    //     vertices: [
-    //         Vertex {
-    //             position: [0.0, 0.0, 0.0],
-    //             color: [1.0, 1.0, 1.0],
-    //         },
-    //         Vertex {
-    //             position: [0.0, 50.0, 0.0],
-    //             color: [1.0, 1.0, 1.0],
-    //         },
-    //     ],
-    // });
-
-   // state.add_circle([0.0, 0.0], 60.0, [1.0, 1.0, 1.0]);
-   // state.add_circle([200.0, 30.0], 50.0, [1.0, 1.0, 1.0]);
 
     state.update_vertex_buffer();
     state.update_circle_vertex_buffer();

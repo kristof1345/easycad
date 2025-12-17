@@ -2,7 +2,7 @@ use crate::graphics::gui_elements::UiAction;
 use crate::DrawLineMode;
 use crate::Mode;
 use crate::State;
-use crate::GUI;
+use crate::gui;
 // use bytemuck::fill_zeroes;
 use egui_wgpu::wgpu;
 use egui_wgpu::ScreenDescriptor;
@@ -101,7 +101,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         &view,
         screen_descriptor,
         |ui| {
-            if let Some(action) = GUI(ui) {
+            if let Some(action) = gui(ui) {
                 match action {
                     UiAction::DrawLine => {
                         *mode_flag = Mode::DrawLine(DrawLineMode::Normal);
