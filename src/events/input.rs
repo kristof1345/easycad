@@ -60,7 +60,6 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             Err(error) => eprintln!("i/o error while saving file: {}", error),
                         };
                     } else {
-                        // test
                         if state.mode == Mode::Normal {
                             state.mode = Mode::Selection;
                         }
@@ -115,21 +114,22 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     }
 
                     if matches!(state.mode, Mode::Selection | Mode::Move(FuncState::Selection)) {
-                        // if lines are selected
-                        // unselec_lines
                         if state.lines.iter().any(|line| line.selected) {
                             state.unselect_lines();
                         }
-
-                        // if circles are selected
-                        // unselect circles
                         if state.circles.iter().any(|circle| circle.selected) {
                             state.unselect_circles();
                         }
                     }
 
                     state.mode = Mode::Normal;
+                    state.snap = None;
                     state.drawing_state = DrawingState::Idle;
+
+                    for indicator in &mut state.indicators {
+                        indicator.vertices[0].position = [0.0, 0.0, 0.0];
+                        indicator.vertices[1].position = [0.0, 0.0, 0.0];
+                    }
                 }
                 KeyCode::Enter => {
                     if matches!(state.mode, Mode::Move(FuncState::Selection)) {
@@ -211,52 +211,51 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 cen_y / state.camera.zoom,
             ]);
 
-            state.snap = None;
+            if matches!(state.mode, Mode::DrawLine(_) | Mode::DrawCircle | Mode::Copy(_) | Mode::Move(_)) {
+                state.snap = None;
 
-            for line in &mut state.lines {
-                if !line.is_drawing {
-                    for vertex in line.vertices {
-                        let x = vertex.position[0];
-                        let y = vertex.position[1];
-    
-                        let diffx = x - world[0];
-                        let diffy = y - world[1];
-    
-                        if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
-                            state.snap = Some([x, y]);
-                            break;
+                for line in &mut state.lines {
+                    if !line.is_drawing {
+                        for vertex in line.vertices {
+                            let x = vertex.position[0];
+                            let y = vertex.position[1];
+        
+                            let diffx = x - world[0];
+                            let diffy = y - world[1];
+        
+                            if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
+                                state.snap = Some([x, y]);
+                                break;
+                            }
                         }
                     }
                 }
-            }
 
-            let circle_snap_vertexes = flatten_circles_for_snap(&mut state.circles);
-            for vertex in circle_snap_vertexes {
-                let x = vertex.position[0];
-                let y = vertex.position[1];
+                let circle_snap_vertexes = flatten_circles_for_snap(&mut state.circles);
+                for vertex in circle_snap_vertexes {
+                    let x = vertex.position[0];
+                    let y = vertex.position[1];
 
-                let diffx = x - world[0];
-                let diffy = y - world[1];
+                    let diffx = x - world[0];
+                    let diffy = y - world[1];
 
-                if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
-                    state.snap = Some([x, y]);
-                    break;
+                    if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
+                        state.snap = Some([x, y]);
+                        break;
+                    }
                 }
-            }
 
-            match state.snap {
-                Some(_vertex) => {
-                    // there's a bug if you zoom out while there's snap turned on, should dissapear once i figure how to reset snap
-                    state.move_indicators_to_cursor([world[0], world[1]]);
-                    state.update_axis_vertex_buffer();
-                }
-                None => {
-                    for indicator in &mut state.indicators {
-                        indicator.vertices[0].position[0] = 0.0;
-                        indicator.vertices[0].position[1] = 0.0;
-
-                        indicator.vertices[1].position[0] = 0.0;
-                        indicator.vertices[1].position[1] = 0.0;
+                match state.snap {
+                    Some(_vertex) => {
+                        // there's a bug if you zoom out while there's snap turned on, should dissapear once i figure how to reset snap
+                        state.move_indicators_to_cursor([world[0], world[1]]);
+                        state.update_axis_vertex_buffer();
+                    }
+                    None => {
+                        for indicator in &mut state.indicators {
+                            indicator.vertices[0].position = [0.0, 0.0, 0.0];
+                            indicator.vertices[1].position = [0.0, 0.0, 0.0];
+                        }
                     }
                 }
             }

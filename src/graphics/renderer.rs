@@ -122,11 +122,20 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
     );
 
     if load_flag {
-        let _ = state.load_from_dxf(load_path);
+        let loaded = state.load_from_dxf(load_path);
+
+        match loaded {
+            Ok(_) => println!("loaded file"),
+            Err(error) => eprintln!("i/o error while loading file: {}", error),
+        };
     }
 
     if save_flag {
-        let _ = state.save_to_dxf();
+        let saved = state.save_to_dxf();
+        match saved {
+            Ok(_) => println!("file saved"),
+            Err(error) => eprintln!("i/o error while saving file: {}", error),
+        };
     }
 
     // if let Some(action) = gui_action {

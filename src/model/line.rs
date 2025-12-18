@@ -69,8 +69,10 @@ impl<'a> LineOps for State<'a> {
             is_drawing: is_drawing_flag,
         });
 
-        let index = self.lines.len() - 1;
-        self.active_line_index = Some(index);
+        if is_drawing_flag {
+            let index = self.lines.len() - 1;
+            self.active_line_index = Some(index);
+        }
         // self.active_line_id = Some(id);
 
         self.update_vertex_buffer();

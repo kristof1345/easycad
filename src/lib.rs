@@ -408,44 +408,21 @@ impl<'a> State<'a> {
         let treshold: f32 = 10.0;
 
         for i in 0..4 {
-            let mut x1: f32 = 0.0;
-            let mut x2: f32 = 0.0;
-            let mut y1: f32 = 0.0;
-            let mut y2: f32 = 0.0;
+            let base_x = point[0] * self.camera.zoom;
+            let base_y = point[1] * self.camera.zoom;
 
-            match i {
-                0 => {
-                    y1 = point[1] * self.camera.zoom + treshold;
-                    y2 = point[1] * self.camera.zoom + treshold;
-                    x1 = point[0] * self.camera.zoom + treshold;
-                    x2 = point[0] * self.camera.zoom - treshold;
-                }
-                1 => {
-                    y1 = point[1] * self.camera.zoom + treshold;
-                    y2 = point[1] * self.camera.zoom - treshold;
-                    x1 = point[0] * self.camera.zoom - treshold;
-                    x2 = point[0] * self.camera.zoom - treshold;
-                }
-                2 => {
-                    y1 = point[1] * self.camera.zoom - treshold;
-                    y2 = point[1] * self.camera.zoom - treshold;
-                    x1 = point[0] * self.camera.zoom + treshold;
-                    x2 = point[0] * self.camera.zoom - treshold;
-                }
-                3 => {
-                    y1 = point[1] * self.camera.zoom + treshold;
-                    y2 = point[1] * self.camera.zoom - treshold;
-                    x1 = point[0] * self.camera.zoom + treshold;
-                    x2 = point[0] * self.camera.zoom + treshold;
-                }
-                _ => {}
-            }
+            let (dx1, dy1, dx2, dy2) = match i {
+                0 => (1.0, 1.0, -1.0, 1.0),
+                1 => (-1.0, 1.0, -1.0, -1.0),
+                2 => (1.0, -1.0, -1.0, -1.0),
+                3 => (1.0, 1.0, 1.0, -1.0),
+                _ => return,
+            };
 
-            self.indicators[i].vertices[0].position[0] = x1;
-            self.indicators[i].vertices[0].position[1] = y1;
-
-            self.indicators[i].vertices[1].position[0] = x2;
-            self.indicators[i].vertices[1].position[1] = y2;
+            self.indicators[i].vertices[0].position[0] = base_x + dx1 * treshold;
+            self.indicators[i].vertices[0].position[1] = base_y + dy1 * treshold;
+            self.indicators[i].vertices[1].position[0] = base_x + dx2 * treshold;
+            self.indicators[i].vertices[1].position[1] = base_y + dy2 * treshold;
         }
     }
 
@@ -489,7 +466,7 @@ impl<'a> State<'a> {
             println!("entity: {:?}", e);
             match e.specific {
                 EntityType::Line(ref line) => {
-                    self.add_line([line.p1.x as f32, line.p1.y as f32], [line.p2.x as f32, line.p2.y as f32], true);
+                    self.add_line([line.p1.x as f32, line.p1.y as f32], [line.p2.x as f32, line.p2.y as f32], false);
                 }
                 EntityType::Circle(ref circle) => {
                     self.add_circle([circle.center.x as f32, circle.center.y as f32], circle.radius as f32, [1.0, 1.0, 1.0], false, false);
@@ -497,6 +474,8 @@ impl<'a> State<'a> {
                 _ => {}
             }
         }
+        
+        println!("{:?}", self.active_line_index);
         println!("⏱ now took: {:?}", now.elapsed());        
 
         Ok(())
