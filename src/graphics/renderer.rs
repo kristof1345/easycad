@@ -138,14 +138,6 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         };
     }
 
-    // if let Some(action) = gui_action {
-    //     match action {
-    //         GuiAction::ToggleLine => {
-    //             state.show_line = !state.show_line;
-    //         }
-    //     }
-    // }
-
     state.queue.submit(iter::once(encoder.finish()));
     frame.present();
 

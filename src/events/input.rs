@@ -86,6 +86,9 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         state.mode = Mode::DrawLine(DrawLineMode::Normal);
                     }
                 }
+                KeyCode::KeyA => {
+                    state.mode = Mode::Measure(None);
+                }
                 KeyCode::Delete => {
                     if state.mode == Mode::Normal {
                         state.mode = Mode::Delete;
@@ -294,7 +297,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if matches!(state.mode, Mode::DrawCircle | Mode::DrawLine(_) | Mode::Move(FuncState::SelectPoint) | Mode::Move(FuncState::Move(_)) | Mode::Copy(FuncState::SelectPoint) | Mode::Copy(FuncState::Copy(_))) => {
+        } if matches!(state.mode, Mode::DrawCircle | Mode::DrawLine(_) | Mode::Move(FuncState::SelectPoint) | Mode::Move(FuncState::Move(_)) | Mode::Copy(FuncState::SelectPoint) | Mode::Copy(FuncState::Copy(_)) | Mode::Measure(_)) => {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
                     DrawingState::Idle => match state.mode {
@@ -324,6 +327,21 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
                             state.drawing_state = DrawingState::WaitingForRadius(snap_or_position);
                             state.add_circle(snap_or_position, 0.0, [1.0, 1.0, 1.0], false, false);
+                        }
+                        Mode::Measure(first_pos) => {
+                            match first_pos {
+                                Some(pos) => {
+                                    println!("{:?}, {:?}", pos, position);
+                                    let dx = pos[0] - position[0];
+                                    let dy = pos[1] - position[1];
+                                    let sum = (dx * dx + dy * dy).sqrt();
+                                    println!("{}", sum);
+                                    state.mode = Mode::Measure(None);
+                                },
+                                None => {
+                                    state.mode = Mode::Measure(Some(position));
+                                },
+                            }
                         }
                         // move lines from this selection point
                         Mode::Move(FuncState::SelectPoint) | Mode::Copy(FuncState::SelectPoint) => {

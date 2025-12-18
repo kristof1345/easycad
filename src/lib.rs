@@ -68,6 +68,8 @@ enum Mode {
     DrawCircle,
     Selection,
     Delete,
+    // Measure(Option<[Vertex; 2]>),
+    Measure(Option<[f32; 2]>),
     DrawLine(DrawLineMode),
     Move(FuncState),
     Copy(FuncState)
@@ -552,6 +554,9 @@ pub async fn run() {
                                 }
                                 Mode::Delete => {
                                     state.window.set_cursor_icon(CursorIcon::Default);
+                                }
+                                Mode::Measure(_) => {
+                                    state.window.set_cursor_icon(CursorIcon::Crosshair);
                                 }
                             }
                         }
