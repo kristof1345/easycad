@@ -2,8 +2,6 @@ use crate::graphics::gui_elements::UiAction;
 use crate::DrawLineMode;
 use crate::Mode;
 use crate::State;
-use crate::gui;
-// use bytemuck::fill_zeroes;
 use egui_wgpu::wgpu;
 use egui_wgpu::ScreenDescriptor;
 use std::iter;
@@ -88,54 +86,47 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         pixels_per_point: state.window().scale_factor() as f32,
     };
 
-    let mode_flag = &mut state.mode;
-    let mut load_flag = false;
-    let mut save_flag = false;
-    let mut load_path: String = String::new();
+    let State {ui, egui, device, queue, window, ..} = state;
 
-    state.egui.draw(
-        &state.device,
-        &state.queue,
+    egui.draw(
+        device,
+        queue,
         &mut encoder,
-        &state.window,
+        window,
         &view,
         screen_descriptor,
-        |ui| {
-            if let Some(action) = gui(ui) {
-                match action {
-                    UiAction::DrawLine => {
-                        *mode_flag = Mode::DrawLine(DrawLineMode::Normal);
-                    }
-                    UiAction::DrawCircle => {
-                        *mode_flag = Mode::DrawCircle;
-                    }
-                    UiAction::OpenFilePath(file_path) => {
-                        load_flag = true;
-                        load_path = file_path;
-                    }
-                    UiAction::SaveFile => {
-                        save_flag = true;
-                    }
-                }
-            }
+        |ui_ctx| {
+            ui.gui(ui_ctx)
         },
     );
 
-    if load_flag {
-        let loaded = state.load_from_dxf(load_path);
+    if let Some(action) = ui.action.take() {
+        match action {
+            UiAction::DrawLine => {
+                state.mode = Mode::DrawLine(DrawLineMode::Normal);
+            }
+            UiAction::DrawCircle => {
+                state.mode = Mode::DrawCircle;
+            }
+            UiAction::OpenFilePath(file_path) => {
+                let loaded = state.load_from_dxf(file_path);
 
-        match loaded {
-            Ok(_) => println!("loaded file"),
-            Err(error) => eprintln!("i/o error while loading file: {}", error),
-        };
-    }
-
-    if save_flag {
-        let saved = state.save_to_dxf();
-        match saved {
-            Ok(_) => println!("file saved"),
-            Err(error) => eprintln!("i/o error while saving file: {}", error),
-        };
+                match loaded {
+                    Ok(_) => println!("loaded file"),
+                    Err(error) => eprintln!("i/o error while loading file: {}", error),
+                };
+            }
+            UiAction::SaveFile => {
+                let saved = state.save_to_dxf();
+                match saved {
+                    Ok(_) => println!("file saved"),
+                    Err(error) => eprintln!("i/o error while saving file: {}", error),
+                };
+            }
+            UiAction::Input(value) => {
+                println!("value we got: {:?}", value);
+            }
+        }
     }
 
     state.queue.submit(iter::once(encoder.finish()));

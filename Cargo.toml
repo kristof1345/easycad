@@ -16,3 +16,4 @@ pollster = "0.3"
 dxf = "0.5"
 bytemuck = { version = "1.16", features = [ "derive" ] }
 rfd = "0.15.3"
+regex = "1.12.2"

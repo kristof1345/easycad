@@ -16,6 +16,7 @@ use winit::keyboard::PhysicalKey;
 
 pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
     match event {
+
         WindowEvent::ModifiersChanged(modifiers) => {
             state.modifiers = modifiers.state();
             false
@@ -26,6 +27,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 KeyEvent {
                     state: ElementState::Pressed,
                     physical_key: PhysicalKey::Code(keycode),
+                    // text: usr_string, 
                     ..
                 },
             ..
@@ -142,6 +144,61 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         state.mode = Mode::Copy(FuncState::SelectPoint);
                     }
                 }
+                KeyCode::Digit0 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('0')
+                    }
+                },
+                KeyCode::Digit1 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('1')
+                    }
+                },
+                KeyCode::Digit2 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('2')
+                    }
+                },
+                KeyCode::Digit3 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('3')
+                    }
+                },
+                KeyCode::Digit4 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('4')
+                    }
+                },
+                KeyCode::Digit5 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('5')
+                    }
+                },
+                KeyCode::Digit6 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('6')
+                    }
+                },
+                KeyCode::Digit7 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('7')
+                    }
+                },
+                KeyCode::Digit8 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('8')
+                    }
+                },
+                KeyCode::Digit9 => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('9')
+                    }
+                },
+                KeyCode::Period => {
+                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                        state.ui.push_digit('.')
+                    }
+                },
                 _ => {}
             }
 

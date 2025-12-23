@@ -7,7 +7,6 @@ mod model;
 use graphics::pipeline::Pipeline;
 use graphics::vertex::Vertex;
 use graphics::gui;
-use graphics::gui_elements;
 use graphics::renderer;
 use graphics::camera;
 use events::input;
@@ -18,7 +17,7 @@ use model::line::flatten_lines;
 use model::circle::flatten_circles;
 
 use gui::EguiRenderer;
-use gui_elements::gui;
+// use gui_elements::gui;
 use egui_wgpu::wgpu::util::DeviceExt;
 use egui_winit::winit::{
     event::*,
@@ -35,6 +34,8 @@ use dxf::entities::*;
 use dxf::entities::EntityType;
 
 use std::time::Instant as OtherInstant;
+
+use crate::graphics::gui_elements::UiState;
 
 const AXIS_COORDINATES: [Vertex; 4] = [
             Vertex {
@@ -100,6 +101,8 @@ struct State<'a> {
     render_pipeline: wgpu::RenderPipeline,
     render_pipeline2: wgpu::RenderPipeline,
     xy_axis_render_pipeline: wgpu::RenderPipeline,
+
+    ui: UiState,
 
     vertex_buffer: wgpu::Buffer,
     vertex_buffer_circle: wgpu::Buffer,
@@ -315,11 +318,13 @@ impl<'a> State<'a> {
             render_pipeline2,
             xy_axis_render_pipeline,
 
+            ui: UiState::new(),
+
             vertex_buffer,
             vertex_buffer_circle,
             circle_indices,
             axis_vertex_buffer,
-
+            
             lines,
             // next_line_id: 0,
             active_line_index: None,

@@ -94,3 +94,15 @@ Footgun: Indexes might mengle up when you get into editing lines. Becuase of del
 # Important
 12/17/2025:
 Line IDs are commented out for now.
+
+
+# Commit 65 - Implemented input handling for line length
+Now it possible to get the input the length of a line or circle radius when it's drawing. The rendering logic isn't implemented yet, just the UI.
+
+To make this work i had to destructure State in renderer.rs and add ui to State with a type of UiState that's in gui_elements.rs. I also made gui() which draws the gui elements to the screen a method
+of the UiState struct. This way I have access to UiState without having to pass UiState onto gui().
+
+Btw, this was one of the problems why I needed to do it this way. in state.egui.draw() I wasn't able to call gui() and pass in state to it... So I wasn't able to access state in gui_elements.
+
+The way i solved input handling is that for the first digit winit is listening. And once the first digit is in, numeric_active - field on UiState - turns on and let's egui's TextEdit field take over
+reditrecting all the input into UiState's numeric_buff. Then, when the user clicks Enter, the input is returned through UiAction's Input() enum, the buffer is cleared and the TextEdit field loses focus.
