@@ -1,7 +1,9 @@
+use crate::DrawingState;
 use crate::graphics::gui_elements::UiAction;
 use crate::DrawLineMode;
 use crate::Mode;
 use crate::State;
+use crate::graphics::vertex::Vertex;
 use egui_wgpu::wgpu;
 use egui_wgpu::ScreenDescriptor;
 use std::iter;
@@ -125,6 +127,40 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
             }
             UiAction::Input(value) => {
                 println!("value we got: {:?}", value);
+                // route input?
+
+                let desired_length: f32 = value.parse().unwrap();
+
+                match state.drawing_state {
+                    DrawingState::WaitingForSecondPoint(start_pos) => {
+                        if let Some(i) = state.active_line_index {
+                            let last_line = &mut state.lines[i as usize];
+
+                            // you can't use cursor_position when using ortho, you have to switch to using the positions of the other Vertex, that should work in both cases
+                            let end_pos = last_line.vertices[1].position;
+                            // let cursor_pos = state.cursor_position.unwrap();
+
+                            // direction vec
+                            let dx = end_pos[0] - start_pos[0];
+                            let dy = end_pos[1] - start_pos[1];
+
+                            let length = (dx*dx + dy*dy).sqrt();
+
+                            let scale = desired_length / length;
+
+                            last_line.vertices[1] = Vertex {
+                                position: [start_pos[0] + dx*scale, start_pos[1] + dy*scale, 0.0],
+                                color: [1.0, 1.0, 1.0],
+                            };
+                            last_line.is_drawing = false;
+                            state.active_line_index = None;
+                            state.drawing_state = DrawingState::Idle;
+                            state.update_vertex_buffer();
+                        }
+                    },
+                    DrawingState::WaitingForRadius(_start_pos) => {},
+                    DrawingState::Idle => {},
+                }
             }
         }
     }

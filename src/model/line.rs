@@ -45,7 +45,6 @@ pub trait LineOps {
     fn unselect_lines(&mut self);
 }
 
-
 // add offsets
 impl<'a> LineOps for State<'a> {
     fn add_line(&mut self, start: [f32; 2], end: [f32; 2], is_drawing_flag: bool) {
@@ -132,6 +131,7 @@ impl<'a> LineOps for State<'a> {
         self.update_vertex_buffer();
     }
 
+    // needs to be updated to fit for active lines index
     fn cancel_drawing_line(&mut self) {
         self.lines.pop();
         self.drawing_state = DrawingState::Idle;
