@@ -67,7 +67,8 @@ impl UiState {
                         res.request_focus();
                     }
 
-                    if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    // if focused
+                    if res.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                         println!("enter");
                         self.numeric_active = false;
                         self.action = Some(UiAction::Input(self.numeric_buff.clone()));

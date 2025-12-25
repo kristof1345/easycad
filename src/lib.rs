@@ -112,7 +112,7 @@ struct State<'a> {
     lines: Vec<Line>,
     // next_line_id: u64,
     active_line_index: Option<usize>,
-    // active_line_id: Option<u64>,
+    active_circle_index: Option<usize>,
 
     circles: Vec<Circle>,
     circle_indices: Vec<u32>,
@@ -328,7 +328,7 @@ impl<'a> State<'a> {
             lines,
             // next_line_id: 0,
             active_line_index: None,
-            // active_line_id: None,
+            active_circle_index: None,
 
             circles,
             index_buffer_circle,
@@ -476,7 +476,7 @@ impl<'a> State<'a> {
                     self.add_line([line.p1.x as f32, line.p1.y as f32], [line.p2.x as f32, line.p2.y as f32], false);
                 }
                 EntityType::Circle(ref circle) => {
-                    self.add_circle([circle.center.x as f32, circle.center.y as f32], circle.radius as f32, [1.0, 1.0, 1.0], false, false);
+                    self.add_circle([circle.center.x as f32, circle.center.y as f32], circle.radius as f32, [1.0, 1.0, 1.0], false, false, false);
                 }
                 _ => {}
             }

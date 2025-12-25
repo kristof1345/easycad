@@ -7,6 +7,7 @@ pub struct Circle {
     pub center: Vertex,
     pub selected: bool,
     pub del: bool,
+    pub is_drawing: bool,
 }
 
 impl Circle {
@@ -14,11 +15,16 @@ impl Circle {
         self.center.position[0] -= dx;
         self.center.position[1] -= dy;
     }
+
+    pub fn finish_circle_with_radius(&mut self, radius: f32) {
+        self.radius = radius;
+        self.is_drawing = false;
+    }
 }
 
 pub trait CircleOps {
-    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool);
-    fn update_circle(&mut self, position: [f32; 2]);
+    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool, is_drawing: bool);
+    fn update_circle(&mut self, position: [f32; 2], is_drawing_flag: bool);
     fn cancel_drawing_circle(&mut self);
     fn unselect_circles(&mut self);
 }
@@ -69,7 +75,7 @@ pub fn flatten_circles_for_snap(circles: &mut Vec<Circle>) -> Vec<Vertex> {
 }
 
 impl<'a> CircleOps for State<'a> {
-    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool,) {
+    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool, is_drawing: bool) {
         let segments = 36;
 
         let all_vertices = flatten_circles(&mut self.circles);
@@ -85,6 +91,7 @@ impl<'a> CircleOps for State<'a> {
                 radius,
                 selected: selected_flag,
                 del: del_flag,
+                is_drawing,
             }
         });
 
@@ -92,27 +99,34 @@ impl<'a> CircleOps for State<'a> {
             self.circle_indices.push(base_index + i);
             self.circle_indices.push(base_index + i + 1);
         }
-
         self.circle_indices.push(base_index + segments - 1);
         self.circle_indices.push(base_index);
+
+        if is_drawing {
+            let index = self.circles.len() - 1;
+            self.active_circle_index = Some(index);
+        }
 
         self.update_circle_vertex_buffer();
     }
 
-    fn update_circle(&mut self, position: [f32; 2]) {
-        let world_x = position[0];
-        let world_y = position[1];
+    fn update_circle(&mut self, position: [f32; 2], is_drawing_flag: bool) {
+        if let Some(i) = self.active_circle_index {
+            let world_x = position[0];
+            let world_y = position[1];
 
-        let length = self.circles.len();
-        let circle = self.circles[(length - 1) as usize];
-        let center = circle.center;
+            let circle = &mut self.circles[i as usize];
+            let center = circle.center;
+            let dx = world_x - center.position[0];
+            let dy = world_y - center.position[1];
+            circle.radius = (dx * dx + dy * dy).sqrt();
+            circle.is_drawing = is_drawing_flag;
 
-        let dx = world_x - center.position[0];
-        let dy = world_y - center.position[1];
-
-        self.circles[(length - 1) as usize].radius = (dx * dx + dy * dy).sqrt();
-
-        self.update_circle_vertex_buffer();
+            if !is_drawing_flag {
+                self.active_circle_index = None;
+            }
+            self.update_circle_vertex_buffer();
+        }
     }
 
     fn cancel_drawing_circle(&mut self) {

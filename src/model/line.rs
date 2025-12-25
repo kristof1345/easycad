@@ -17,6 +17,19 @@ impl Line {
             v.position[1] -= dy;
         }
     }
+
+    pub fn finish_line_with_length(&mut self, start_pos: [f32; 2], desired_len: f32) {
+        let end_pos = self.vertices[1].position;
+        let dx = end_pos[0] - start_pos[0];
+        let dy = end_pos[1] - start_pos[1];
+        let length = (dx*dx + dy*dy).sqrt();
+        let scale = desired_len / length;
+        self.vertices[1] = Vertex {
+            position: [start_pos[0] + dx*scale, start_pos[1] + dy*scale, 0.0],
+            color: [1.0, 1.0, 1.0],
+        };
+        self.is_drawing = false;
+    }
 }
 
 // flatten lines vector into a flat vector of vertices

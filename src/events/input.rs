@@ -324,7 +324,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 state.update_line([world[0], world[1]], true);
             }
             if let DrawingState::WaitingForRadius(_start_pos) = state.drawing_state {
-                state.update_circle([world[0], world[1]]);
+                state.update_circle([world[0], world[1]], true);
             }
             if let Mode::Move(FuncState::Move(starting_position)) | Mode::Copy(FuncState::Copy(starting_position)) = state.mode {
                 let diff1 = starting_position[0] - world[0];
@@ -383,7 +383,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             }
 
                             state.drawing_state = DrawingState::WaitingForRadius(snap_or_position);
-                            state.add_circle(snap_or_position, 0.0, [1.0, 1.0, 1.0], false, false);
+                            state.add_circle(snap_or_position, 0.0, [1.0, 1.0, 1.0], false, false, true);
                         }
                         Mode::Measure(first_pos) => {
                             match first_pos {
@@ -435,7 +435,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                 state.lines.push(new_line);
                             }
                             for new_circle in new_circles {
-                                state.add_circle([new_circle.center.position[0], new_circle.center.position[1]], new_circle.radius, new_circle.center.color, new_circle.selected, new_circle.del);
+                                state.add_circle([new_circle.center.position[0], new_circle.center.position[1]], new_circle.radius, new_circle.center.color, new_circle.selected, new_circle.del, new_circle.is_drawing);
                             }
                         }
                         // second click: move the selected objects "HERE"
@@ -498,7 +498,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                 None => {}
                             }
 
-                            state.update_circle(snap_or_position);
+                            state.update_circle(snap_or_position, false);
                             state.drawing_state = DrawingState::Idle;
                         }
                         _ => {}
