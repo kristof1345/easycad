@@ -405,27 +405,36 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             let mut new_lines = Vec::new();
                             let mut new_circles = Vec::new();
 
-                            if matches!(state.mode, Mode::Move(_)) {
-                                state.mode = Mode::Move(FuncState::Move(position));
+                            let pos: [f32; 2];
+                            if let Some(snap_pos) = state.snap {
+                                pos = snap_pos;
                             } else {
-                                state.mode = Mode::Copy(FuncState::Copy(position));
+                                pos = position;
+                            }
+
+                            if matches!(state.mode, Mode::Move(_)) {
+                                state.mode = Mode::Move(FuncState::Move(pos));
+                            } else {
+                                state.mode = Mode::Copy(FuncState::Copy(pos));
                             }
 
                             for line in &mut state.lines {
                                 if line.selected {
-                                    let new_line = line.clone();
+                                    let mut new_line = line.clone();
                                     line.selected = false;
                                     line.del = matches!(state.mode, Mode::Move(_));
 
+                                    new_line.is_drawing = true;
                                     new_lines.push(new_line);
                                 }
                             }
                             for circle in &mut state.circles {
                                 if circle.selected {
-                                    let new_circle = circle.clone();
+                                    let mut new_circle = circle.clone();
                                     circle.selected = false;
                                     circle.del = matches!(state.mode, Mode::Move(_));
 
+                                    new_circle.is_drawing = true;
                                     new_circles.push(new_circle);
                                 }
                             }
@@ -440,14 +449,23 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         }
                         // second click: move the selected objects "HERE"
                         Mode::Move(FuncState::Move(starting_position)) | Mode::Copy(FuncState::Copy(starting_position)) => {
-                            let diff1 = starting_position[0] - position[0];
-                            let diff2 = starting_position[1] - position[1];
+                            let diff1: f32;
+                            let diff2: f32;
+
+                            if let Some(snap_pos) = state.snap {
+                                diff1 = starting_position[0] - snap_pos[0];
+                                diff2 = starting_position[1] - snap_pos[1];
+                            } else {
+                                diff1 = starting_position[0] - position[0];
+                                diff2 = starting_position[1] - position[1];
+                            }
 
                             for line in &mut state.lines {
                                 if line.selected {
                                     line.move_line(diff1, diff2);
 
                                     line.selected = false;
+                                    line.is_drawing = false;
                                 }
                             }
                             for circle in &mut state.circles {
@@ -455,6 +473,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                     circle.move_circle(diff1, diff2);
 
                                     circle.selected = false;
+                                    circle.is_drawing = false;
                                 }
                             }
 
@@ -465,6 +484,11 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.update_vertex_buffer();
                             state.update_circle_vertex_buffer();
                             state.mode = Mode::Normal;
+
+                            for indicator in &mut state.indicators {
+                                indicator.vertices[0].position = [0.0, 0.0, 0.0];
+                                indicator.vertices[1].position = [0.0, 0.0, 0.0];
+                            }
                         }
                         _ => {}
                     },

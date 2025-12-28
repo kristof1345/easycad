@@ -59,16 +59,18 @@ pub fn flatten_circles_for_snap(circles: &mut Vec<Circle>) -> Vec<Vertex> {
     let mut flat = Vec::new();
 
     for circle in circles.iter_mut() {
-        let x = circle.center.position[0];
-        let y = circle.center.position[1];
-
-        flat.extend([
-            Vertex{ position: [x, y + circle.radius, 0.0], color: circle.center.color }, // vertex above venter point
-            Vertex { position: [x - circle.radius, y, 0.0], color: circle.center.color }, // vertex to the left of center point
-            Vertex { position: [x, y - circle.radius, 0.0], color: circle.center.color  }, // vertex below venter point
-            Vertex { position: [x + circle.radius, y, 0.0], color: circle.center.color }, // vertex to the right of venter point
-            circle.center
-        ]);
+        if !circle.is_drawing {
+            let x = circle.center.position[0];
+            let y = circle.center.position[1];
+    
+            flat.extend([
+                Vertex{ position: [x, y + circle.radius, 0.0], color: circle.center.color }, // vertex above venter point
+                Vertex { position: [x - circle.radius, y, 0.0], color: circle.center.color }, // vertex to the left of center point
+                Vertex { position: [x, y - circle.radius, 0.0], color: circle.center.color  }, // vertex below venter point
+                Vertex { position: [x + circle.radius, y, 0.0], color: circle.center.color }, // vertex to the right of venter point
+                circle.center
+            ]);
+        }
     }
 
     flat

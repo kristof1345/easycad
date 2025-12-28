@@ -1,5 +1,14 @@
 
 
+# Roadmap
+Next features
+- buggy snap when moving
+- buggy snap when copying
+
+
+# Features
+- Measuring - key A
+
 
 # snap
 ...
@@ -106,3 +115,30 @@ Btw, this was one of the problems why I needed to do it this way. in state.egui.
 
 The way i solved input handling is that for the first digit winit is listening. And once the first digit is in, numeric_active - field on UiState - turns on and let's egui's TextEdit field take over
 reditrecting all the input into UiState's numeric_buff. Then, when the user clicks Enter, the input is returned through UiAction's Input() enum, the buffer is cleared and the TextEdit field loses focus.
+
+
+
+
+
+
+
+// in Mode::Move(FuncState::SelectPoint) | Mode::Copy(FuncState::SelectPoint) => {
+let pos: [f32; 2];
+if let Some(snap_pos) = state.snap {
+        pos = snap_pos;
+} else {
+        pos = position;
+}
+
+// in Mode::Move(FuncState::Move(starting_position)) | Mode::Copy(FuncState::Copy(starting_position)) => {
+let diff1: f32;
+let diff2: f32;
+
+if let Some(snap_pos) = state.snap {
+        diff1 = starting_position[0] - snap_pos[0];
+        diff2 = starting_position[1] - snap_pos[1];
+} else {
+        diff1 = starting_position[0] - position[0];
+        diff2 = starting_position[1] - position[1];
+}
+

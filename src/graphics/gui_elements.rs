@@ -2,6 +2,7 @@ use egui::{Align2, Context};
 
 #[derive(Clone, Debug)]
 pub struct UiState {
+    pub bg_color: [f64; 3],
     pub numeric_buff: String,
     pub numeric_active: bool,
     pub action: Option<UiAction>,
@@ -20,7 +21,12 @@ impl UiState {
     pub fn new() -> Self {
         let numeric_buff = String::new();
 
+        // let bg_color = [5.0, 8.0, 12.0];
+        let bg_color = [1.0, 1.0, 1.0];
+        // let bg_color = [255.0, 255.0, 255.0];
+
         Self {
+            bg_color,
             numeric_buff,
             numeric_active: false,
             action: None,
@@ -40,18 +46,27 @@ impl UiState {
                     if ui.add(egui::Button::new("line")).clicked() {
                         self.action = Some(UiAction::DrawLine);
                     }
+
                     if ui.add(egui::Button::new("circle")).clicked() {
                         self.action = Some(UiAction::DrawCircle);
                     }
 
-                    if ui.button("Open file…").clicked() {
+                    if ui.button("open file…").clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_file() {
                             self.action = Some(UiAction::OpenFilePath(path.display().to_string()));
                         }
                     }
 
-                    if ui.button("Save").clicked() {
+                    if ui.button("save").clicked() {
                         self.action = Some(UiAction::SaveFile);
+                    }
+
+                    if ui.button("light theme").clicked() {
+                        self.bg_color = [5.0, 8.0, 12.0];
+                    }
+
+                    if ui.button("dark theme").clicked() {
+                        self.bg_color = [1.0, 1.0, 1.0];
                     }
                 });
             });

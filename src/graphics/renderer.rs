@@ -44,9 +44,9 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 5.0 / 255.0,
-                        g: 8.0 / 255.0,
-                        b: 12.0 / 255.0,
+                        r: state.ui.bg_color[0] / 255.0,
+                        g: state.ui.bg_color[1] / 255.0,
+                        b: state.ui.bg_color[2] / 255.0,
                         a: 1.0,
                     }),
                     store: wgpu::StoreOp::Store,
