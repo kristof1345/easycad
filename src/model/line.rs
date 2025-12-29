@@ -1,4 +1,5 @@
 use crate::graphics::vertex::Vertex;
+use crate::graphics::gui_elements::ColorScheme;
 use crate::{DrawLineMode, DrawingState, Mode, State};
 
 #[derive(Debug, Clone, Copy)]
@@ -33,13 +34,16 @@ impl Line {
 }
 
 // flatten lines vector into a flat vector of vertices
-pub fn flatten_lines(lines: &mut Vec<Line>) -> Vec<Vertex> {
+pub fn flatten_lines(lines: &mut Vec<Line>, color_scheme: ColorScheme) -> Vec<Vertex> {
     let mut flat = Vec::new();
 
     for line in lines.iter_mut() {
         if line.selected {
             line.vertices[0].color = [1.0, 0.0, 0.0]; // bright red
             line.vertices[1].color = [1.0, 0.0, 0.0]; // bright red
+        } else if color_scheme == ColorScheme::Light { 
+            line.vertices[0].color = [0.0, 0.0, 0.0]; // black
+            line.vertices[1].color = [0.0, 0.0, 0.0]; // black
         } else {
             line.vertices[0].color = [1.0, 1.0, 1.0]; // white
             line.vertices[1].color = [1.0, 1.0, 1.0]; // white

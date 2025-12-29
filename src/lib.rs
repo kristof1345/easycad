@@ -7,6 +7,7 @@ mod model;
 use graphics::pipeline::Pipeline;
 use graphics::vertex::Vertex;
 use graphics::gui;
+// use graphics::gui_elements::{ColorScheme, Theme};
 use graphics::renderer;
 use graphics::camera;
 use events::input;
@@ -35,6 +36,7 @@ use dxf::entities::EntityType;
 
 use std::time::Instant as OtherInstant;
 
+use crate::graphics::gui_elements::ColorScheme;
 use crate::graphics::gui_elements::UiState;
 
 const AXIS_COORDINATES: [Vertex; 4] = [
@@ -372,7 +374,7 @@ impl<'a> State<'a> {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("vertex buffer"),
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                contents: bytemuck::cast_slice(&flatten_lines(&mut self.lines)),
+                contents: bytemuck::cast_slice(&flatten_lines(&mut self.lines, self.ui.theme.color_scheme)),
             });
         self.num_vertices = (self.lines.len() as u32) * 2;
     }
@@ -383,7 +385,7 @@ impl<'a> State<'a> {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("circle vertex buffer"),
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                contents: bytemuck::cast_slice(&flatten_circles(&mut self.circles)),
+                contents: bytemuck::cast_slice(&flatten_circles(&mut self.circles, self.ui.theme.color_scheme)),
             });
         self.num_vertices_circle = (self.circles.len() as u32) * 36; // 37 because of the last closing vertex
 
@@ -395,11 +397,16 @@ impl<'a> State<'a> {
     }
 
     pub fn update_axis_vertex_buffer(&mut self) {
-        let flat_indicators = flatten_lines(&mut self.indicators);
+        let flat_indicators = flatten_lines(&mut self.indicators, self.ui.theme.color_scheme);
 
         let mut out = Vec::with_capacity(4 + flat_indicators.len());
         out.extend_from_slice(&AXIS_COORDINATES);
         out.extend_from_slice(&flat_indicators);
+
+        if self.ui.theme.color_scheme == ColorScheme::Light {
+            out[2].color = [0.0, 0.0, 0.0];
+            out[3].color = [0.0, 0.0, 0.0];
+        }
 
         self.axis_vertex_buffer = self
             .device

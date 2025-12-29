@@ -2,8 +2,11 @@
 
 # Roadmap
 Next features
-- buggy snap when moving
-- buggy snap when copying
+- add white theme - toggle theme
+- make measure work with snap
+- print the measured distance - UI notifications?
+- print cursor coordinates
+
 
 
 # Features

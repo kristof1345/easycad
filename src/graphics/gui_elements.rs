@@ -2,7 +2,7 @@ use egui::{Align2, Context};
 
 #[derive(Clone, Debug)]
 pub struct UiState {
-    pub bg_color: [f64; 3],
+    pub theme: Theme,
     pub numeric_buff: String,
     pub numeric_active: bool,
     pub action: Option<UiAction>,
@@ -15,18 +15,47 @@ pub enum UiAction {
     OpenFilePath(String),
     SaveFile,
     Input(String),
+    ChangeTheme,
 }
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ColorScheme {
+    Light,
+    Grey,
+    Dark,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Theme {
+    pub color_scheme: ColorScheme,
+    pub colors: [f64; 3], 
+}
+
+const THEMES: [Theme; 3] = [
+    Theme {
+        color_scheme: ColorScheme::Dark,
+        colors: [1.0, 1.0, 1.0],
+    },
+    Theme {
+        color_scheme: ColorScheme::Grey,
+        colors: [5.0, 8.0, 12.0],
+    },
+    Theme {
+        color_scheme: ColorScheme::Light,
+        colors: [255.0, 255.0, 255.0],
+    }
+];
 
 impl UiState {
     pub fn new() -> Self {
         let numeric_buff = String::new();
 
         // let bg_color = [5.0, 8.0, 12.0];
-        let bg_color = [1.0, 1.0, 1.0];
+        let theme = THEMES[0];
         // let bg_color = [255.0, 255.0, 255.0];
 
         Self {
-            bg_color,
+            theme,
             numeric_buff,
             numeric_active: false,
             action: None,
@@ -61,12 +90,15 @@ impl UiState {
                         self.action = Some(UiAction::SaveFile);
                     }
 
-                    if ui.button("light theme").clicked() {
-                        self.bg_color = [5.0, 8.0, 12.0];
-                    }
-
-                    if ui.button("dark theme").clicked() {
-                        self.bg_color = [1.0, 1.0, 1.0];
+                    if ui.button("toggle theme").clicked() {
+                        if let Some(ind) = THEMES.iter().position(|theme| theme.color_scheme == self.theme.color_scheme) {
+                            if ind == THEMES.len() - 1 {
+                                self.theme = THEMES[0];
+                            } else {
+                                self.theme = THEMES[ind + 1];
+                            }
+                            self.action = Some(UiAction::ChangeTheme);
+                        }
                     }
                 });
             });

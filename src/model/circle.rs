@@ -1,3 +1,4 @@
+use crate::graphics::gui_elements::ColorScheme;
 use crate::graphics::vertex::Vertex;
 use crate::{DrawingState, Mode, State};
 
@@ -30,13 +31,15 @@ pub trait CircleOps {
 }
 
 // flatten vector of circles into flat vector of vertices
-pub fn flatten_circles(circles: &mut Vec<Circle>) -> Vec<Vertex> {
+pub fn flatten_circles(circles: &mut Vec<Circle>, color_scheme: ColorScheme) -> Vec<Vertex> {
     let mut flat = Vec::new();
     let n = 36;
 
     for circle in circles.iter_mut() {
         if circle.selected {
             circle.center.color = [1.0, 0.0, 0.0];
+        } else if color_scheme == ColorScheme::Light {
+            circle.center.color = [0.0, 0.0, 0.0];
         } else {
             circle.center.color = [1.0, 1.0, 1.0];
         }
@@ -80,7 +83,7 @@ impl<'a> CircleOps for State<'a> {
     fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool, is_drawing: bool) {
         let segments = 36;
 
-        let all_vertices = flatten_circles(&mut self.circles);
+        let all_vertices = flatten_circles(&mut self.circles, self.ui.theme.color_scheme);
 
         let base_index = all_vertices.len() as u32;
 
