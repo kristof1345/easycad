@@ -85,10 +85,29 @@ impl UiState {
 
     pub fn gui(&mut self, ui: &Context) {
         self.notifications.retain(|n| n.created_at.elapsed() < n.ttl);
+
         
         egui::Area::new(egui::Id::new("feature area"))
             .anchor(Align2::LEFT_TOP, [7.0, 5.0])
             .show(&ui, |ui| {
+                // let visuals = ui.visuals_mut();
+                let style = ui.style_mut();
+
+                style.visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(40, 40, 40);
+                style.visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_gray(80));
+                style.visuals.widgets.inactive.rounding = egui::Rounding::same(6.0);
+
+                style.spacing.button_padding = egui::vec2(7.0, 4.0);
+                style.text_styles.insert(egui::TextStyle::Button, egui::FontId::new(12.0, egui::FontFamily::Proportional));
+
+                style.visuals.widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
+                style.visuals.widgets.hovered.fg_stroke = egui::Stroke::new(1.0, egui::Color32::WHITE);
+                style.visuals.widgets.hovered.rounding = egui::Rounding::same(6.0);
+
+                style.visuals.widgets.active.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
+                style.visuals.widgets.active.expansion = 2.0;
+                style.visuals.widgets.active.rounding = egui::Rounding::same(6.0);
+
                 ui.horizontal(|ui| {
                     if ui.add(egui::Button::new("line")).clicked() {
                         self.action = Some(UiAction::DrawLine);
@@ -129,8 +148,17 @@ impl UiState {
             .anchor(Align2::RIGHT_BOTTOM, [-10.0, -10.0])
             .show(&ui, |ui| {
                 for note in &self.notifications {
-                    egui::Frame::popup(ui.style()).show(ui, |ui| {
-                        ui.add(egui::Label::new(&note.message).wrap(false));
+                    let frame = egui::Frame::default()
+                        .fill(egui::Color32::from_rgb(40, 40, 40))
+                        .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(80)))
+                        .rounding(egui::Rounding::same(6.0))
+                        .inner_margin(8.0);
+                        // .outer_margin(5.0);
+                        // .shadow(egui::Shadow::small_dark());
+
+                    frame.show(ui, |ui| {
+                        ui.set_max_width(250.0);
+                        ui.label(egui::RichText::new(&note.message).color(egui::Color32::WHITE).size(12.0));
                     });
                     ui.add_space(5.0);
                 }
