@@ -499,7 +499,7 @@ impl<'a> State<'a> {
 pub async fn run() {
     env_logger::init();
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new().with_title("cad").with_inner_size(winit::dpi::LogicalSize::new(800, 600)).build(&event_loop).unwrap();
+    let window = WindowBuilder::new().with_title("easycad").with_inner_size(winit::dpi::LogicalSize::new(800, 600)).build(&event_loop).unwrap();
 
     event_loop.set_control_flow(ControlFlow::Poll);
 

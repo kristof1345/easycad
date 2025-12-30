@@ -2,10 +2,8 @@
 
 # Roadmap
 Next features
-- add white theme - toggle theme
-- make measure work with snap
-- print the measured distance - UI notifications?
 - print cursor coordinates
+- line thickness
 
 
 

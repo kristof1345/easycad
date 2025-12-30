@@ -271,7 +271,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 cen_y / state.camera.zoom,
             ]);
 
-            if matches!(state.mode, Mode::DrawLine(_) | Mode::DrawCircle | Mode::Copy(_) | Mode::Move(_)) {
+            if matches!(state.mode, Mode::DrawLine(_) | Mode::DrawCircle | Mode::Copy(_) | Mode::Move(_) | Mode::Measure(_)) {
                 state.snap = None;
 
                 for line in &mut state.lines {
@@ -386,17 +386,20 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.add_circle(snap_or_position, 0.0, [1.0, 1.0, 1.0], false, false, true);
                         }
                         Mode::Measure(first_pos) => {
+                            let snap_or_pos = state.snap.unwrap_or_else(|| position);
                             match first_pos {
                                 Some(pos) => {
                                     println!("{:?}, {:?}", pos, position);
-                                    let dx = pos[0] - position[0];
-                                    let dy = pos[1] - position[1];
+                                    let dx = pos[0] - snap_or_pos[0];
+                                    let dy = pos[1] - snap_or_pos[1];
                                     let sum = (dx * dx + dy * dy).sqrt();
-                                    println!("{}", sum);
+                                    let rounded = (sum * 1000.0).round() / 1000.0;
+                                    println!("{}", rounded);
+                                    state.ui.add_notification(&format!("{}", rounded));
                                     state.mode = Mode::Measure(None);
                                 },
                                 None => {
-                                    state.mode = Mode::Measure(Some(position));
+                                    state.mode = Mode::Measure(Some(snap_or_pos));
                                 },
                             }
                         }
