@@ -1,4 +1,4 @@
-use egui::{Align2, Context};
+use egui::{Align2, Context, Margin};
 use std::time::{Duration, Instant};
 
 #[derive(Clone, Debug)]
@@ -8,6 +8,7 @@ pub struct UiState {
     pub numeric_active: bool,
     pub action: Option<UiAction>,
     pub notifications: Vec<Notification>,
+    pub cursor_position: Option<[f32; 2]>,
 }
 
 #[derive(Clone, Debug)]
@@ -58,10 +59,7 @@ const THEMES: [Theme; 3] = [
 impl UiState {
     pub fn new() -> Self {
         let numeric_buff = String::new();
-
-        // let bg_color = [5.0, 8.0, 12.0];
         let theme = THEMES[0];
-        // let bg_color = [255.0, 255.0, 255.0];
 
         Self {
             theme,
@@ -69,6 +67,7 @@ impl UiState {
             numeric_active: false,
             action: None,
             notifications: Vec::new(),
+            cursor_position: None,
         }
     }
 
@@ -144,24 +143,42 @@ impl UiState {
                 });
             });
 
+        // separate these two. put position into the corner, make notifications appear on top of them
         egui::Area::new(egui::Id::new("toasts"))
-            .anchor(Align2::RIGHT_BOTTOM, [-10.0, -10.0])
+            .anchor(Align2::RIGHT_BOTTOM, [0.0, 0.0])
             .show(&ui, |ui| {
-                for note in &self.notifications {
-                    let frame = egui::Frame::default()
-                        .fill(egui::Color32::from_rgb(40, 40, 40))
-                        .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(80)))
-                        .rounding(egui::Rounding::same(6.0))
-                        .inner_margin(8.0);
-                        // .outer_margin(5.0);
-                        // .shadow(egui::Shadow::small_dark());
-
-                    frame.show(ui, |ui| {
-                        ui.set_max_width(250.0);
-                        ui.label(egui::RichText::new(&note.message).color(egui::Color32::WHITE).size(12.0));
+                egui::Frame::none()
+                    .inner_margin(egui::Margin {
+                        right: 10.0,
+                        bottom: 10.0,
+                        ..Default::default()
+                    })
+                    .show(ui, |ui| {
+                        ui.with_layout(egui::Layout::left_to_right(egui::Align::Max), |ui| {
+                            if let Some(cursor_pos) = self.cursor_position {
+                                ui.label(format!("{:.3}", cursor_pos[0]));
+                                ui.label(format!("{:.3}", cursor_pos[1]));
+                            }
+        
+                            ui.add_space(5.0);
+        
+                            ui.with_layout(egui::Layout::bottom_up(egui::Align::Min),|ui| {
+                                for note in &self.notifications {
+                                    let frame = egui::Frame::default()
+                                        .fill(egui::Color32::from_rgb(40, 40, 40))
+                                        .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(80)))
+                                        .rounding(egui::Rounding::same(6.0))
+                                        .inner_margin(Margin::symmetric(7.0, 4.0));
+                
+                                    frame.show(ui, |ui| {
+                                        ui.set_max_width(250.0);
+                                        ui.label(egui::RichText::new(&note.message).color(egui::Color32::WHITE).size(12.0));
+                                    });
+                                    ui.add_space(5.0);
+                                }
+                            });
+                        });
                     });
-                    ui.add_space(5.0);
-                }
             });
 
         egui::Area::new(egui::Id::new("text palette area"))

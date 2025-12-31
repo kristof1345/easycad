@@ -263,6 +263,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             let world = screen_to_world(screen[0], screen[1], state.size, &state.camera);
 
             state.cursor_position = Some(world);
+            state.ui.cursor_position = Some(world);
 
             let cen_x = screen[0] - state.size.width as f32 / 2.0;
             let cen_y = state.size.height as f32 / 2.0 - screen[1];
