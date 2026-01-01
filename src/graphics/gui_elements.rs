@@ -84,28 +84,26 @@ impl UiState {
 
     pub fn gui(&mut self, ui: &Context) {
         self.notifications.retain(|n| n.created_at.elapsed() < n.ttl);
-
         
         egui::Area::new(egui::Id::new("feature area"))
             .anchor(Align2::LEFT_TOP, [7.0, 5.0])
             .show(&ui, |ui| {
-                // let visuals = ui.visuals_mut();
                 let style = ui.style_mut();
-
-                style.visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(40, 40, 40);
-                style.visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_gray(80));
-                style.visuals.widgets.inactive.rounding = egui::Rounding::same(6.0);
 
                 style.spacing.button_padding = egui::vec2(7.0, 4.0);
                 style.text_styles.insert(egui::TextStyle::Button, egui::FontId::new(12.0, egui::FontFamily::Proportional));
 
+                style.visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(40, 40, 40);
+                style.visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_gray(80));
+                style.visuals.widgets.inactive.fg_stroke = egui::Stroke::new(1.0, egui::Color32::WHITE);
+                style.visuals.widgets.inactive.rounding = egui::Rounding::same(3.0);
+
                 style.visuals.widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
-                style.visuals.widgets.hovered.fg_stroke = egui::Stroke::new(1.0, egui::Color32::WHITE);
-                style.visuals.widgets.hovered.rounding = egui::Rounding::same(6.0);
+                style.visuals.widgets.hovered.rounding = egui::Rounding::same(3.0);
 
                 style.visuals.widgets.active.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
                 style.visuals.widgets.active.expansion = 2.0;
-                style.visuals.widgets.active.rounding = egui::Rounding::same(6.0);
+                style.visuals.widgets.active.rounding = egui::Rounding::same(3.0);
 
                 ui.horizontal(|ui| {
                     if ui.add(egui::Button::new("line")).clicked() {
@@ -144,7 +142,7 @@ impl UiState {
             });
 
         // separate these two. put position into the corner, make notifications appear on top of them
-        egui::Area::new(egui::Id::new("toasts"))
+        egui::Area::new(egui::Id::new("bottom right panel"))
             .anchor(Align2::RIGHT_BOTTOM, [0.0, 0.0])
             .show(&ui, |ui| {
                 egui::Frame::none()
@@ -156,27 +154,38 @@ impl UiState {
                     .show(ui, |ui| {
                         ui.with_layout(egui::Layout::left_to_right(egui::Align::Max), |ui| {
                             if let Some(cursor_pos) = self.cursor_position {
-                                ui.label(format!("{:.3}", cursor_pos[0]));
-                                ui.label(format!("{:.3}", cursor_pos[1]));
+                                ui.label(format!("x: {:.3}", cursor_pos[0]));
+                                ui.label(format!("y: {:.3}", cursor_pos[1]));
                             }
-        
-                            ui.add_space(5.0);
-        
-                            ui.with_layout(egui::Layout::bottom_up(egui::Align::Min),|ui| {
-                                for note in &self.notifications {
-                                    let frame = egui::Frame::default()
-                                        .fill(egui::Color32::from_rgb(40, 40, 40))
-                                        .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(80)))
-                                        .rounding(egui::Rounding::same(6.0))
-                                        .inner_margin(Margin::symmetric(7.0, 4.0));
-                
-                                    frame.show(ui, |ui| {
-                                        ui.set_max_width(250.0);
-                                        ui.label(egui::RichText::new(&note.message).color(egui::Color32::WHITE).size(12.0));
-                                    });
-                                    ui.add_space(5.0);
-                                }
-                            });
+                        });
+                    });
+            });
+
+        egui::Area::new(egui::Id::new("notifications"))
+            .anchor(Align2::RIGHT_BOTTOM, [0.0, 0.0])
+            .show(&ui, |ui| {
+                egui::Frame::none()
+                    .inner_margin(egui::Margin {
+                        right: 10.0,
+                        bottom: 27.0,
+                        ..Default::default()
+                    })
+                    .show(ui, |ui| {
+                        ui.with_layout(egui::Layout::top_down(egui::Align::Min),|ui| {
+                            for note in &self.notifications {
+                                let frame = egui::Frame::default()
+                                    .fill(egui::Color32::from_rgb(40, 40, 40))
+                                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(80)))
+                                    .rounding(egui::Rounding::same(3.0))
+                                    .multiply_with_opacity(0.5)
+                                    .inner_margin(Margin::symmetric(7.0, 4.0));
+            
+                                frame.show(ui, |ui| {
+                                    ui.set_max_width(250.0);
+                                    ui.label(egui::RichText::new(&note.message).color(egui::Color32::WHITE).size(12.0));
+                                });
+                                ui.add_space(5.0);
+                            }
                         });
                     });
             });
@@ -184,6 +193,14 @@ impl UiState {
         egui::Area::new(egui::Id::new("text palette area"))
             .anchor(Align2::CENTER_BOTTOM, [0.0, 0.0])
             .show(&ui, |ui| {
+                let style = ui.style_mut();
+
+                style.visuals.extreme_bg_color = egui::Color32::from_rgb(40, 40, 40);
+                style.visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_gray(80));
+                style.visuals.widgets.inactive.rounding = egui::Rounding::same(3.0);
+                style.visuals.widgets.hovered.rounding = egui::Rounding::same(3.0);
+                style.visuals.widgets.active.rounding = egui::Rounding::same(3.0);
+
                 ui.horizontal_centered(|ui| {
                     // let mut input = String::new();
                     let res = ui.add(egui::TextEdit::singleline(&mut self.numeric_buff).desired_width(80.0));

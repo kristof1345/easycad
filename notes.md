@@ -2,7 +2,6 @@
 
 # Roadmap
 Next features
-- print cursor coordinates
 - line thickness
 
 
