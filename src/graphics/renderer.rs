@@ -87,7 +87,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         pixels_per_point: state.window().scale_factor() as f32,
     };
 
-    let State {ui, egui, device, queue, window, ..} = state;
+    let State {ui, egui, device, queue, window, camera, ..} = state;
 
     egui.draw(
         device,
@@ -97,7 +97,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         &view,
         screen_descriptor,
         |ui_ctx| {
-            ui.gui(ui_ctx)
+            ui.gui(ui_ctx, camera)
         },
     );
 

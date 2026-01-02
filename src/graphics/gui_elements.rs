@@ -1,5 +1,10 @@
 use egui::{Align2, Context, Margin};
+use winit::dpi::PhysicalSize;
 use std::time::{Duration, Instant};
+
+use crate::events::input::world_to_screen;
+
+use crate::graphics::camera::Camera;
 
 #[derive(Clone, Debug)]
 pub struct UiState {
@@ -82,9 +87,11 @@ impl UiState {
         self.numeric_buff.push(ch);
     }
 
-    pub fn gui(&mut self, ui: &Context) {
+    pub fn gui(&mut self, ui: &Context, camera: &mut Camera) {
         self.notifications.retain(|n| n.created_at.elapsed() < n.ttl);
-        
+
+        let screen_rect = ui.screen_rect();
+
         egui::Area::new(egui::Id::new("feature area"))
             .anchor(Align2::LEFT_TOP, [7.0, 5.0])
             .show(&ui, |ui| {
@@ -104,6 +111,24 @@ impl UiState {
                 style.visuals.widgets.active.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
                 style.visuals.widgets.active.expansion = 2.0;
                 style.visuals.widgets.active.rounding = egui::Rounding::same(3.0);
+
+                let painter = ui.painter();
+                // let height = screen_rect.height();
+                // let width = screen_rect.width();
+
+                let world_position = world_to_screen(50.0, 30.0, screen_rect, camera);
+                let world_pos = egui::pos2(world_position[0], world_position[1]);
+                // println!("{:?} {:?} {:?}", world_pos, camera.zoom, [height, width]);
+
+                // let world_pos = egui::pos2(30.0, 40.0);
+
+                painter.text(
+                    world_pos,
+                    egui::Align2::CENTER_BOTTOM,
+                    "ghk",
+                    egui::FontId::proportional(14.0),
+                   egui::Color32::WHITE,
+                );
 
                 ui.horizontal(|ui| {
                     if ui.add(egui::Button::new("line")).clicked() {

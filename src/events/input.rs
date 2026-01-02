@@ -668,7 +668,7 @@ fn circle_hit(px: f32, py: f32, cx: f32, cy: f32, r: f32) -> f32 {
     (dist - r).abs()
 }
 
-fn screen_to_world(
+pub fn screen_to_world(
     screen_x: f32,
     screen_y: f32,
     size: winit::dpi::PhysicalSize<u32>,
@@ -681,4 +681,22 @@ fn screen_to_world(
         cen_x / camera.zoom + camera.x_offset,
         cen_y / camera.zoom + camera.y_offset,
     ]
+}
+
+pub fn world_to_screen(
+    world_x: f32,
+    world_y: f32,
+    screen_rect: egui::Rect,
+    camera: &Camera,
+) -> [f32; 2] {
+    let cen_x = screen_rect.width() / 2.0;
+    let cen_y = screen_rect.height() / 2.0;
+
+    let rel_x = world_x - camera.x_offset;
+    let rel_y = world_y - camera.y_offset;
+
+    let screen_x = (rel_x * camera.zoom) + cen_x;
+    let screen_y = (rel_y * camera.zoom) + cen_y;
+
+    [screen_x + screen_rect.min.x, screen_y + screen_rect.min.y]
 }
