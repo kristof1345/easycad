@@ -1,5 +1,4 @@
 use egui::{Align2, Context, Margin};
-use winit::dpi::PhysicalSize;
 use std::time::{Duration, Instant};
 
 use crate::events::input::world_to_screen;
@@ -43,7 +42,7 @@ pub enum ColorScheme {
 #[derive(Copy, Clone, Debug)]
 pub struct Theme {
     pub color_scheme: ColorScheme,
-    pub colors: [f64; 3], 
+    pub colors: [f64; 3],
 }
 
 const THEMES: [Theme; 3] = [
@@ -58,7 +57,7 @@ const THEMES: [Theme; 3] = [
     Theme {
         color_scheme: ColorScheme::Light,
         colors: [255.0, 255.0, 255.0],
-    }
+    },
 ];
 
 impl UiState {
@@ -77,9 +76,11 @@ impl UiState {
     }
 
     pub fn add_notification(&mut self, text: &str) {
-        self.notifications.push(
-            Notification { message: text.to_string(), created_at: Instant::now(), ttl: Duration::from_secs(5) }
-        );
+        self.notifications.push(Notification {
+            message: text.to_string(),
+            created_at: Instant::now(),
+            ttl: Duration::from_secs(5),
+        });
     }
 
     pub fn push_digit(&mut self, ch: char) {
@@ -88,9 +89,12 @@ impl UiState {
     }
 
     pub fn gui(&mut self, ui: &Context, camera: &mut Camera) {
-        self.notifications.retain(|n| n.created_at.elapsed() < n.ttl);
+        self.notifications
+            .retain(|n| n.created_at.elapsed() < n.ttl);
 
-        let screen_rect = ui.screen_rect();
+        let pixels_per_point = ui.pixels_per_point();
+
+        let veiwport_rect = ui.available_rect();
 
         egui::Area::new(egui::Id::new("feature area"))
             .anchor(Align2::LEFT_TOP, [7.0, 5.0])
@@ -98,11 +102,16 @@ impl UiState {
                 let style = ui.style_mut();
 
                 style.spacing.button_padding = egui::vec2(7.0, 4.0);
-                style.text_styles.insert(egui::TextStyle::Button, egui::FontId::new(12.0, egui::FontFamily::Proportional));
+                style.text_styles.insert(
+                    egui::TextStyle::Button,
+                    egui::FontId::new(12.0, egui::FontFamily::Proportional),
+                );
 
                 style.visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(40, 40, 40);
-                style.visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_gray(80));
-                style.visuals.widgets.inactive.fg_stroke = egui::Stroke::new(1.0, egui::Color32::WHITE);
+                style.visuals.widgets.inactive.bg_stroke =
+                    egui::Stroke::new(1.0, egui::Color32::from_gray(80));
+                style.visuals.widgets.inactive.fg_stroke =
+                    egui::Stroke::new(1.0, egui::Color32::WHITE);
                 style.visuals.widgets.inactive.rounding = egui::Rounding::same(3.0);
 
                 style.visuals.widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
@@ -113,22 +122,24 @@ impl UiState {
                 style.visuals.widgets.active.rounding = egui::Rounding::same(3.0);
 
                 let painter = ui.painter();
-                // let height = screen_rect.height();
-                // let width = screen_rect.width();
 
-                let world_position = world_to_screen(50.0, 30.0, screen_rect, camera);
-                let world_pos = egui::pos2(world_position[0], world_position[1]);
-                // println!("{:?} {:?} {:?}", world_pos, camera.zoom, [height, width]);
-
-                // let world_pos = egui::pos2(30.0, 40.0);
-
-                painter.text(
-                    world_pos,
-                    egui::Align2::CENTER_BOTTOM,
-                    "ghk",
-                    egui::FontId::proportional(14.0),
-                   egui::Color32::WHITE,
-                );
+                if let Some(cursor_pos) = self.cursor_position {
+                    println!("cursor: {:?}", cursor_pos);
+                    let screen_position = world_to_screen(
+                        cursor_pos[0],
+                        cursor_pos[1],
+                        veiwport_rect,
+                        camera,
+                        pixels_per_point,
+                    );
+                    painter.text(
+                        screen_position,
+                        egui::Align2::CENTER_BOTTOM,
+                        "Cursor",
+                        egui::FontId::proportional(14.0),
+                        egui::Color32::WHITE,
+                    );
+                }
 
                 ui.horizontal(|ui| {
                     if ui.add(egui::Button::new("line")).clicked() {
@@ -150,7 +161,10 @@ impl UiState {
                     }
 
                     if ui.button("toggle theme").clicked() {
-                        if let Some(ind) = THEMES.iter().position(|theme| theme.color_scheme == self.theme.color_scheme) {
+                        if let Some(ind) = THEMES
+                            .iter()
+                            .position(|theme| theme.color_scheme == self.theme.color_scheme)
+                        {
                             if ind == THEMES.len() - 1 {
                                 self.theme = THEMES[0];
                             } else {
@@ -196,7 +210,7 @@ impl UiState {
                         ..Default::default()
                     })
                     .show(ui, |ui| {
-                        ui.with_layout(egui::Layout::top_down(egui::Align::Min),|ui| {
+                        ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
                             for note in &self.notifications {
                                 let frame = egui::Frame::default()
                                     .fill(egui::Color32::from_rgb(40, 40, 40))
@@ -204,10 +218,14 @@ impl UiState {
                                     .rounding(egui::Rounding::same(3.0))
                                     .multiply_with_opacity(0.5)
                                     .inner_margin(Margin::symmetric(7.0, 4.0));
-            
+
                                 frame.show(ui, |ui| {
                                     ui.set_max_width(250.0);
-                                    ui.label(egui::RichText::new(&note.message).color(egui::Color32::WHITE).size(12.0));
+                                    ui.label(
+                                        egui::RichText::new(&note.message)
+                                            .color(egui::Color32::WHITE)
+                                            .size(12.0),
+                                    );
                                 });
                                 ui.add_space(5.0);
                             }
@@ -221,14 +239,17 @@ impl UiState {
                 let style = ui.style_mut();
 
                 style.visuals.extreme_bg_color = egui::Color32::from_rgb(40, 40, 40);
-                style.visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_gray(80));
+                style.visuals.widgets.inactive.bg_stroke =
+                    egui::Stroke::new(1.0, egui::Color32::from_gray(80));
                 style.visuals.widgets.inactive.rounding = egui::Rounding::same(3.0);
                 style.visuals.widgets.hovered.rounding = egui::Rounding::same(3.0);
                 style.visuals.widgets.active.rounding = egui::Rounding::same(3.0);
 
                 ui.horizontal_centered(|ui| {
                     // let mut input = String::new();
-                    let res = ui.add(egui::TextEdit::singleline(&mut self.numeric_buff).desired_width(80.0));
+                    let res = ui.add(
+                        egui::TextEdit::singleline(&mut self.numeric_buff).desired_width(80.0),
+                    );
 
                     if self.numeric_active {
                         res.request_focus();
@@ -245,6 +266,5 @@ impl UiState {
                     }
                 })
             });
-
     }
 }

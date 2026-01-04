@@ -1,12 +1,12 @@
-use crate::model::circle::CircleOps;
-use crate::model::circle::flatten_circles_for_snap;
-use crate::model::line::LineOps;
-use crate::model::line::Line;
-use crate::model::circle::Circle;
 use crate::graphics::camera::Camera;
+use crate::model::circle::flatten_circles_for_snap;
+use crate::model::circle::Circle;
+use crate::model::circle::CircleOps;
+use crate::model::line::Line;
+use crate::model::line::LineOps;
 use crate::DrawLineMode;
-use crate::FuncState;
 use crate::DrawingState;
+use crate::FuncState;
 use crate::Mode;
 use crate::State;
 use winit::event::KeyEvent;
@@ -16,7 +16,6 @@ use winit::keyboard::PhysicalKey;
 
 pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
     match event {
-
         WindowEvent::ModifiersChanged(modifiers) => {
             state.modifiers = modifiers.state();
             false
@@ -27,7 +26,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 KeyEvent {
                     state: ElementState::Pressed,
                     physical_key: PhysicalKey::Code(keycode),
-                    // text: usr_string, 
+                    // text: usr_string,
                     ..
                 },
             ..
@@ -97,7 +96,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     } else if state.mode == Mode::Selection {
                         state.lines.retain(|line| line.selected != true);
                         state.circles.retain(|circle| circle.selected != true);
-    
+
                         state.update_vertex_buffer();
                         state.update_circle_vertex_buffer();
                     }
@@ -118,7 +117,10 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         }
                     }
 
-                    if matches!(state.mode, Mode::Selection | Mode::Move(FuncState::Selection)) {
+                    if matches!(
+                        state.mode,
+                        Mode::Selection | Mode::Move(FuncState::Selection)
+                    ) {
                         if state.lines.iter().any(|line| line.selected) {
                             state.unselect_lines();
                         }
@@ -145,60 +147,93 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     }
                 }
                 KeyCode::Digit0 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('0')
                     }
-                },
+                }
                 KeyCode::Digit1 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('1')
                     }
-                },
+                }
                 KeyCode::Digit2 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('2')
                     }
-                },
+                }
                 KeyCode::Digit3 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('3')
                     }
-                },
+                }
                 KeyCode::Digit4 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('4')
                     }
-                },
+                }
                 KeyCode::Digit5 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('5')
                     }
-                },
+                }
                 KeyCode::Digit6 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('6')
                     }
-                },
+                }
                 KeyCode::Digit7 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('7')
                     }
-                },
+                }
                 KeyCode::Digit8 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('8')
                     }
-                },
+                }
                 KeyCode::Digit9 => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('9')
                     }
-                },
+                }
                 KeyCode::Period => {
-                    if matches!(state.drawing_state, DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)) {
+                    if matches!(
+                        state.drawing_state,
+                        DrawingState::WaitingForSecondPoint(_) | DrawingState::WaitingForRadius(_)
+                    ) {
                         state.ui.push_digit('.')
                     }
-                },
+                }
                 _ => {}
             }
 
@@ -267,12 +302,17 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
             let cen_x = screen[0] - state.size.width as f32 / 2.0;
             let cen_y = state.size.height as f32 / 2.0 - screen[1];
-            state.last_position_for_pan = Some([
-                cen_x / state.camera.zoom,
-                cen_y / state.camera.zoom,
-            ]);
+            state.last_position_for_pan =
+                Some([cen_x / state.camera.zoom, cen_y / state.camera.zoom]);
 
-            if matches!(state.mode, Mode::DrawLine(_) | Mode::DrawCircle | Mode::Copy(_) | Mode::Move(_) | Mode::Measure(_)) {
+            if matches!(
+                state.mode,
+                Mode::DrawLine(_)
+                    | Mode::DrawCircle
+                    | Mode::Copy(_)
+                    | Mode::Move(_)
+                    | Mode::Measure(_)
+            ) {
                 state.snap = None;
 
                 for line in &mut state.lines {
@@ -280,10 +320,10 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         for vertex in line.vertices {
                             let x = vertex.position[0];
                             let y = vertex.position[1];
-        
+
                             let diffx = x - world[0];
                             let diffy = y - world[1];
-        
+
                             if diffx.abs() < snap_treshold && diffy.abs() < snap_treshold {
                                 state.snap = Some([x, y]);
                                 break;
@@ -327,7 +367,9 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             if let DrawingState::WaitingForRadius(_start_pos) = state.drawing_state {
                 state.update_circle([world[0], world[1]], true);
             }
-            if let Mode::Move(FuncState::Move(starting_position)) | Mode::Copy(FuncState::Copy(starting_position)) = state.mode {
+            if let Mode::Move(FuncState::Move(starting_position))
+            | Mode::Copy(FuncState::Copy(starting_position)) = state.mode
+            {
                 let diff1 = starting_position[0] - world[0];
                 let diff2 = starting_position[1] - world[1];
 
@@ -355,7 +397,17 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if matches!(state.mode, Mode::DrawCircle | Mode::DrawLine(_) | Mode::Move(FuncState::SelectPoint) | Mode::Move(FuncState::Move(_)) | Mode::Copy(FuncState::SelectPoint) | Mode::Copy(FuncState::Copy(_)) | Mode::Measure(_)) => {
+        } if matches!(
+            state.mode,
+            Mode::DrawCircle
+                | Mode::DrawLine(_)
+                | Mode::Move(FuncState::SelectPoint)
+                | Mode::Move(FuncState::Move(_))
+                | Mode::Copy(FuncState::SelectPoint)
+                | Mode::Copy(FuncState::Copy(_))
+                | Mode::Measure(_)
+        ) =>
+        {
             if let Some(position) = state.cursor_position {
                 match state.drawing_state {
                     DrawingState::Idle => match state.mode {
@@ -370,7 +422,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                 None => {}
                             }
 
-                            state.drawing_state = DrawingState::WaitingForSecondPoint(snap_or_position);
+                            state.drawing_state =
+                                DrawingState::WaitingForSecondPoint(snap_or_position);
                             state.add_line(snap_or_position, snap_or_position, true);
                         }
                         Mode::DrawCircle => {
@@ -384,7 +437,14 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             }
 
                             state.drawing_state = DrawingState::WaitingForRadius(snap_or_position);
-                            state.add_circle(snap_or_position, 0.0, [1.0, 1.0, 1.0], false, false, true);
+                            state.add_circle(
+                                snap_or_position,
+                                0.0,
+                                [1.0, 1.0, 1.0],
+                                false,
+                                false,
+                                true,
+                            );
                         }
                         Mode::Measure(first_pos) => {
                             let snap_or_pos = state.snap.unwrap_or_else(|| position);
@@ -398,10 +458,10 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                     println!("{}", rounded);
                                     state.ui.add_notification(&format!("{}", rounded));
                                     state.mode = Mode::Measure(None);
-                                },
+                                }
                                 None => {
                                     state.mode = Mode::Measure(Some(snap_or_pos));
-                                },
+                                }
                             }
                         }
                         // move lines from this selection point
@@ -443,16 +503,23 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                 }
                             }
 
-
                             for new_line in new_lines {
                                 state.lines.push(new_line);
                             }
                             for new_circle in new_circles {
-                                state.add_circle([new_circle.center.position[0], new_circle.center.position[1]], new_circle.radius, new_circle.center.color, new_circle.selected, new_circle.del, new_circle.is_drawing);
+                                state.add_circle(
+                                    [new_circle.center.position[0], new_circle.center.position[1]],
+                                    new_circle.radius,
+                                    new_circle.center.color,
+                                    new_circle.selected,
+                                    new_circle.del,
+                                    new_circle.is_drawing,
+                                );
                             }
                         }
                         // second click: move the selected objects "HERE"
-                        Mode::Move(FuncState::Move(starting_position)) | Mode::Copy(FuncState::Copy(starting_position)) => {
+                        Mode::Move(FuncState::Move(starting_position))
+                        | Mode::Copy(FuncState::Copy(starting_position)) => {
                             let diff1: f32;
                             let diff2: f32;
 
@@ -542,17 +609,26 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
-        } if matches!(state.mode, Mode::Normal | Mode::Selection | Mode::Move(FuncState::Selection) | Mode::Copy(FuncState::Selection) | Mode::Delete) => {
+        } if matches!(
+            state.mode,
+            Mode::Normal
+                | Mode::Selection
+                | Mode::Move(FuncState::Selection)
+                | Mode::Copy(FuncState::Selection)
+                | Mode::Delete
+        ) =>
+        {
             if let Some(position) = state.cursor_position {
                 let mut update: bool = false;
 
                 let treshold = 5.0 / state.camera.zoom;
-  
+
                 for line in &mut state.lines {
                     let a = line.vertices[0].position;
                     let b = line.vertices[1].position;
 
-                    let d = point_segment_distance(position[0], position[1], a[0], a[1], b[0], b[1]);
+                    let d =
+                        point_segment_distance(position[0], position[1], a[0], a[1], b[0], b[1]);
 
                     if d < treshold && !line.selected {
                         if !matches!(state.mode, Mode::Move(_) | Mode::Copy(_) | Mode::Delete) {
@@ -560,7 +636,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         }
                         line.selected = true;
                         update = true;
-                    } 
+                    }
                 }
 
                 for circle in &mut state.circles {
@@ -575,7 +651,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         }
                         circle.selected = true;
                         update = true;
-                    } 
+                    }
                 }
 
                 if update {
@@ -595,12 +671,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
             let zoom_speed = 0.1;
 
             let factor = match delta {
-                MouseScrollDelta::LineDelta(_, y) => {
-                    1.0 + zoom_speed * y.signum()
-                }
-                MouseScrollDelta::PixelDelta(pos) => {
-                    1.0 + zoom_speed * pos.y.signum() as f32
-                }
+                MouseScrollDelta::LineDelta(_, y) => 1.0 + zoom_speed * y.signum(),
+                MouseScrollDelta::PixelDelta(pos) => 1.0 + zoom_speed * pos.y.signum() as f32,
             };
 
             if let Some([sx, sy]) = state.last_screen_position_for_pan {
@@ -633,13 +705,12 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
     }
 }
 
-
 // helper functions
 
 fn point_segment_distance(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) -> f32 {
     let abx: f32 = bx - ax;
     let aby: f32 = by - ay;
-    
+
     // handle zero length segment
     let ab_len_squared = abx * abx + aby * aby;
     if ab_len_squared == 0.0 {
@@ -647,7 +718,7 @@ fn point_segment_distance(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) 
         let dy: f32 = py - ay;
         return (dx * dx + dy * dy).sqrt();
     }
-    
+
     let t = ((px - ax) * abx + (py - ay) * aby) / ab_len_squared;
 
     let t = t.clamp(0.0, 1.0);
@@ -663,7 +734,7 @@ fn point_segment_distance(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) 
 fn circle_hit(px: f32, py: f32, cx: f32, cy: f32, r: f32) -> f32 {
     let dx = px - cx;
     let dy = py - cy;
-    let dist = (dx*dx + dy*dy).sqrt();
+    let dist = (dx * dx + dy * dy).sqrt();
 
     (dist - r).abs()
 }
@@ -686,17 +757,17 @@ pub fn screen_to_world(
 pub fn world_to_screen(
     world_x: f32,
     world_y: f32,
-    screen_rect: egui::Rect,
+    veiwport_rect: egui::Rect,
     camera: &Camera,
-) -> [f32; 2] {
-    let cen_x = screen_rect.width() / 2.0;
-    let cen_y = screen_rect.height() / 2.0;
-
+    pixels_per_point: f32,
+) -> egui::Pos2 {
+    let screen_cen = veiwport_rect.center();
+    let log_zoom = camera.zoom / pixels_per_point;
     let rel_x = world_x - camera.x_offset;
     let rel_y = world_y - camera.y_offset;
 
-    let screen_x = (rel_x * camera.zoom) + cen_x;
-    let screen_y = (rel_y * camera.zoom) + cen_y;
+    let screen_x = (rel_x * log_zoom) + screen_cen.x;
+    let screen_y = screen_cen.y - (rel_y * log_zoom);
 
-    [screen_x + screen_rect.min.x, screen_y + screen_rect.min.y]
+    egui::pos2(screen_x, screen_y)
 }

@@ -1,38 +1,37 @@
 use egui_wgpu::wgpu;
 
-mod graphics;
 mod events;
+mod graphics;
 mod model;
 
-use graphics::pipeline::Pipeline;
-use graphics::vertex::Vertex;
-use graphics::gui;
-// use graphics::gui_elements::{ColorScheme, Theme};
-use graphics::renderer;
-use graphics::camera;
 use events::input;
-use model::circle::CircleOps;
-use model::line::Line;
-use model::circle::Circle;
-use model::line::flatten_lines;
+use graphics::camera;
+use graphics::gui;
+use graphics::pipeline::Pipeline;
+use graphics::renderer;
+use graphics::vertex::Vertex;
 use model::circle::flatten_circles;
+use model::circle::Circle;
+use model::circle::CircleOps;
+use model::line::flatten_lines;
+use model::line::Line;
 
 use gui::EguiRenderer;
 // use gui_elements::gui;
 use egui_wgpu::wgpu::util::DeviceExt;
+use egui_winit::winit;
 use egui_winit::winit::{
     event::*,
-    event_loop::{EventLoop, ControlFlow},
+    event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
 use model::line::LineOps;
 use winit::keyboard::ModifiersState;
 use winit::window::CursorIcon;
-use egui_winit::winit;
 
-use dxf::Drawing;
-use dxf::entities::*;
 use dxf::entities::EntityType;
+use dxf::entities::*;
+use dxf::Drawing;
 
 use std::time::Instant as OtherInstant;
 
@@ -40,23 +39,23 @@ use crate::graphics::gui_elements::ColorScheme;
 use crate::graphics::gui_elements::UiState;
 
 const AXIS_COORDINATES: [Vertex; 4] = [
-            Vertex {
-                position: [50.1, 0.0, 0.0],
-                color: [255.0, 0.0, 0.0],
-            },
-            Vertex {
-                position: [0.0, 0.0, 0.0],
-                color: [255.0, 0.0, 0.0],
-            },
-            Vertex {
-                position: [0.0, 50.1, 0.0],
-                color: [1.0, 1.0, 1.0],
-            },
-            Vertex {
-                position: [0.0, 0.0, 0.0],
-                color: [1.0, 1.0, 1.0],
-            },
-        ];
+    Vertex {
+        position: [50.1, 0.0, 0.0],
+        color: [255.0, 0.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        color: [255.0, 0.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 50.1, 0.0],
+        color: [1.0, 1.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        color: [1.0, 1.0, 1.0],
+    },
+];
 
 #[derive(Debug)]
 enum DrawingState {
@@ -75,7 +74,7 @@ enum Mode {
     Measure(Option<[f32; 2]>),
     DrawLine(DrawLineMode),
     Move(FuncState),
-    Copy(FuncState)
+    Copy(FuncState),
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -89,7 +88,7 @@ enum FuncState {
     Selection,
     Move([f32; 2]),
     Copy([f32; 2]),
-    SelectPoint
+    SelectPoint,
 }
 
 struct State<'a> {
@@ -204,19 +203,20 @@ impl<'a> State<'a> {
             contents: bytemuck::cast_slice(&[uniform]),
         });
 
-        let camera_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("zoom bind group layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+        let camera_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("zoom bind group layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
 
         let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("camera bind group"),
@@ -268,24 +268,35 @@ impl<'a> State<'a> {
         });
 
         let circle_indices = Vec::new();
-        let index_buffer_circle = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Circle index buffer"),
-                contents: bytemuck::cast_slice(&circle_indices),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        );
+        let index_buffer_circle = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Circle index buffer"),
+            contents: bytemuck::cast_slice(&circle_indices),
+            usage: wgpu::BufferUsages::INDEX,
+        });
 
-        let render_pipeline = Pipeline::new(&device, &config, &shader, &camera_bind_group_layout).render_pipeline;
-        let render_pipeline2 = Pipeline::new_circle_pipeline(&device, &config, &circle_shader, &camera_bind_group_layout).render_pipeline;
-        let xy_axis_render_pipeline = Pipeline::new_xy_axis_pipeline(&device, &config, &xy_axis_shader, &camera_bind_group_layout).render_pipeline;
+        let render_pipeline =
+            Pipeline::new(&device, &config, &shader, &camera_bind_group_layout).render_pipeline;
+        let render_pipeline2 = Pipeline::new_circle_pipeline(
+            &device,
+            &config,
+            &circle_shader,
+            &camera_bind_group_layout,
+        )
+        .render_pipeline;
+        let xy_axis_render_pipeline = Pipeline::new_xy_axis_pipeline(
+            &device,
+            &config,
+            &xy_axis_shader,
+            &camera_bind_group_layout,
+        )
+        .render_pipeline;
 
         let egui = EguiRenderer::new(
             &device,       // wgpu Device
             config.format, // TextureFormat
             None,          // this can be None
             1,             // samples
-            window,       // winit Window
+            window,        // winit Window
         );
 
         let dragging = false;
@@ -295,11 +306,12 @@ impl<'a> State<'a> {
                 vertices: [
                     Vertex {
                         position: [0.0, 0.0, 0.0],
-                        color: [1.0, 1.0, 1.0] },
+                        color: [1.0, 1.0, 1.0],
+                    },
                     Vertex {
                         position: [0.0, 0.0, 0.0],
-                        color: [1.0, 1.0, 1.0]
-                    }
+                        color: [1.0, 1.0, 1.0],
+                    },
                 ],
                 // id: i,
                 selected: false,
@@ -326,7 +338,7 @@ impl<'a> State<'a> {
             vertex_buffer_circle,
             circle_indices,
             axis_vertex_buffer,
-            
+
             lines,
             // next_line_id: 0,
             active_line_index: None,
@@ -374,26 +386,34 @@ impl<'a> State<'a> {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("vertex buffer"),
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                contents: bytemuck::cast_slice(&flatten_lines(&mut self.lines, self.ui.theme.color_scheme)),
+                contents: bytemuck::cast_slice(&flatten_lines(
+                    &mut self.lines,
+                    self.ui.theme.color_scheme,
+                )),
             });
         self.num_vertices = (self.lines.len() as u32) * 2;
     }
 
     pub fn update_circle_vertex_buffer(&mut self) {
-        self.vertex_buffer_circle = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("circle vertex buffer"),
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                contents: bytemuck::cast_slice(&flatten_circles(&mut self.circles, self.ui.theme.color_scheme)),
-            });
+        self.vertex_buffer_circle =
+            self.device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("circle vertex buffer"),
+                    usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                    contents: bytemuck::cast_slice(&flatten_circles(
+                        &mut self.circles,
+                        self.ui.theme.color_scheme,
+                    )),
+                });
         self.num_vertices_circle = (self.circles.len() as u32) * 36; // 37 because of the last closing vertex
 
-        self.index_buffer_circle = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Circle Index Buffer"),
-            contents: bytemuck::cast_slice(&self.circle_indices),
-            usage: wgpu::BufferUsages::INDEX,
-        });
+        self.index_buffer_circle =
+            self.device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Circle Index Buffer"),
+                    contents: bytemuck::cast_slice(&self.circle_indices),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
     }
 
     pub fn update_axis_vertex_buffer(&mut self) {
@@ -408,13 +428,13 @@ impl<'a> State<'a> {
             out[3].color = [0.0, 0.0, 0.0];
         }
 
-        self.axis_vertex_buffer = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("axis vertex buffer"),
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                contents: bytemuck::cast_slice(&out),
-            });
+        self.axis_vertex_buffer =
+            self.device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("axis vertex buffer"),
+                    usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                    contents: bytemuck::cast_slice(&out),
+                });
         self.num_vertices_indicators = out.len() as u32;
     }
 
@@ -480,17 +500,28 @@ impl<'a> State<'a> {
             println!("entity: {:?}", e);
             match e.specific {
                 EntityType::Line(ref line) => {
-                    self.add_line([line.p1.x as f32, line.p1.y as f32], [line.p2.x as f32, line.p2.y as f32], false);
+                    self.add_line(
+                        [line.p1.x as f32, line.p1.y as f32],
+                        [line.p2.x as f32, line.p2.y as f32],
+                        false,
+                    );
                 }
                 EntityType::Circle(ref circle) => {
-                    self.add_circle([circle.center.x as f32, circle.center.y as f32], circle.radius as f32, [1.0, 1.0, 1.0], false, false, false);
+                    self.add_circle(
+                        [circle.center.x as f32, circle.center.y as f32],
+                        circle.radius as f32,
+                        [1.0, 1.0, 1.0],
+                        false,
+                        false,
+                        false,
+                    );
                 }
                 _ => {}
             }
         }
-        
+
         println!("{:?}", self.active_line_index);
-        println!("⏱ now took: {:?}", now.elapsed());        
+        println!("⏱ now took: {:?}", now.elapsed());
 
         Ok(())
     }
@@ -499,7 +530,11 @@ impl<'a> State<'a> {
 pub async fn run() {
     env_logger::init();
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new().with_title("easycad").with_inner_size(winit::dpi::LogicalSize::new(800, 600)).build(&event_loop).unwrap();
+    let window = WindowBuilder::new()
+        .with_title("easycad")
+        .with_inner_size(winit::dpi::LogicalSize::new(800, 600))
+        .build(&event_loop)
+        .unwrap();
 
     event_loop.set_control_flow(ControlFlow::Poll);
 
@@ -517,8 +552,8 @@ pub async fn run() {
                     let egui_wants_keyboard = state.egui.context.wants_keyboard_input();
 
                     let should_skip = match event {
-                        WindowEvent::CursorMoved { .. } 
-                        | WindowEvent::MouseInput { .. } 
+                        WindowEvent::CursorMoved { .. }
+                        | WindowEvent::MouseInput { .. }
                         | WindowEvent::MouseWheel { .. } => egui_wants_pointer,
                         WindowEvent::KeyboardInput { .. } => egui_wants_keyboard,
                         _ => false, // Let other events through
@@ -534,14 +569,12 @@ pub async fn run() {
                                 WindowEvent::Resized(new_size) => {
                                     state.resize(new_size);
                                 }
-                                WindowEvent::RedrawRequested => {
-                                    match state.render() {
-                                        Ok(_) => {}
-                                        Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
-                                        Err(wgpu::SurfaceError::OutOfMemory) => control_flow.exit(),
-                                        Err(e) => eprintln!("{:?}", e),
-                                    }
-                                }
+                                WindowEvent::RedrawRequested => match state.render() {
+                                    Ok(_) => {}
+                                    Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
+                                    Err(wgpu::SurfaceError::OutOfMemory) => control_flow.exit(),
+                                    Err(e) => eprintln!("{:?}", e),
+                                },
                                 _ => {}
                             };
 
@@ -549,7 +582,8 @@ pub async fn run() {
                                 Mode::Normal => {
                                     state.window.set_cursor_icon(CursorIcon::Default);
                                 }
-                                Mode::DrawLine(DrawLineMode::Normal) | Mode::DrawLine(DrawLineMode::Ortho) => {
+                                Mode::DrawLine(DrawLineMode::Normal)
+                                | Mode::DrawLine(DrawLineMode::Ortho) => {
                                     state.window.set_cursor_icon(CursorIcon::Crosshair);
                                 }
                                 Mode::DrawCircle => {

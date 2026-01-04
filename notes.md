@@ -2,7 +2,9 @@
 
 # Roadmap
 Next features
+- text
 - line thickness
+
 
 
 
@@ -142,3 +144,45 @@ if let Some(snap_pos) = state.snap {
         diff2 = starting_position[1] - position[1];
 }
 
+
+# Different screens, different results
+I'm working on implementing text atm, and the problem I'm facing is this: I'm converting world_pos to screen_pos and just for testing I made the text follow my cursor. Which it did on my monitor, but not on my laptop. On my laptop, the further I got away from 0.0 0.0 the further the text got away from my cursor.
+
+The code:
+pub fn world_to_screen(
+    world_x: f32,
+    world_y: f32,
+    screen_rect: egui::Rect,
+    camera: &Camera,
+) -> [f32; 2] {
+    let cen_x = screen_rect.width() / 2.0;
+    let cen_y = screen_rect.height() / 2.0;
+
+    let rel_x = world_x - camera.x_offset;
+    println!("x offset: {:?}", camera.x_offset);
+    println!("y offset: {:?}", camera.y_offset);
+    println!("zoom: {:?}", camera.zoom);
+    println!("cen_x: {:?}", cen_x);
+    println!("cen_y: {:?}", cen_y);
+    let rel_y = world_y - camera.y_offset;
+
+    let screen_x = (rel_x * camera.zoom) + cen_x;
+    let screen_y = cen_y - (rel_y * camera.zoom);
+
+    [screen_x, screen_y]
+}
+
+Problem: screen resolution
+I added this line into gui_elements where ui is an egui Context. On my laptop screen it returned 1.5, while on my monitor just 1.0.
+let pixels_per_point = ui.pixels_per_point();
+
+500 on a 1.0x screen is not the same as 500 on a 1.5x screen. This happens because of egui.
+
+After this line, it still wasn't quite right. The text was offseted, but the offset was constant. Here i changed screen_rect which solved it:
+let veiwport_rect = ui.available_rect();
+
+This is why it fixed the issue on your laptop (1.5x scale).
+Winit Size: Returns Physical Pixels (e.g., 1920x1080).
+Egui Rect: Returns Logical Points (e.g., 1280x720).
+Previously, you were grabbing the physical size (1920) and trying to map it to egui's logical coordinate system. This created a mismatch where egui thought the screen was huge (or tiny), causing the "drift" you saw when zooming.
+ui.available_rect() gives you a rectangle that is already in Egui's native Logical Points. You no longer need to manually divide by the scale factor or worry about converting units for the screen bounds—egui has already done that math for you.
