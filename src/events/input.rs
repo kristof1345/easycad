@@ -1,4 +1,5 @@
 use crate::graphics::camera::Camera;
+use crate::graphics::gui_elements::Text;
 use crate::model::circle::flatten_circles_for_snap;
 use crate::model::circle::Circle;
 use crate::model::circle::CircleOps;
@@ -99,6 +100,11 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
                         state.update_vertex_buffer();
                         state.update_circle_vertex_buffer();
+                    }
+                }
+                KeyCode::KeyT => {
+                    if state.mode == Mode::Normal {
+                        state.mode = Mode::CreateText;
                     }
                 }
                 KeyCode::Escape => {
@@ -406,6 +412,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 | Mode::Copy(FuncState::SelectPoint)
                 | Mode::Copy(FuncState::Copy(_))
                 | Mode::Measure(_)
+                | Mode::CreateText
         ) =>
         {
             if let Some(position) = state.cursor_position {
@@ -450,12 +457,12 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             let snap_or_pos = state.snap.unwrap_or_else(|| position);
                             match first_pos {
                                 Some(pos) => {
-                                    println!("{:?}, {:?}", pos, position);
+                                    // println!("{:?}, {:?}", pos, position);
                                     let dx = pos[0] - snap_or_pos[0];
                                     let dy = pos[1] - snap_or_pos[1];
                                     let sum = (dx * dx + dy * dy).sqrt();
                                     let rounded = (sum * 1000.0).round() / 1000.0;
-                                    println!("{}", rounded);
+                                    // println!("{}", rounded);
                                     state.ui.add_notification(&format!("{}", rounded));
                                     state.mode = Mode::Measure(None);
                                 }
@@ -560,6 +567,15 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                 indicator.vertices[0].position = [0.0, 0.0, 0.0];
                                 indicator.vertices[1].position = [0.0, 0.0, 0.0];
                             }
+                        }
+                        Mode::CreateText => {
+                            // create a new text object
+                            let snap_or_pos = state.snap.unwrap_or_else(|| position);
+                            state.ui.texts.push(Text {
+                                position: snap_or_pos,
+                                contents: egui::WidgetText::from("Text"),
+                            });
+                            state.mode = Mode::Normal;
                         }
                         _ => {}
                     },

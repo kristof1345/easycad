@@ -1,4 +1,5 @@
 use egui::{Align2, Context, Margin};
+use std::fmt;
 use std::time::{Duration, Instant};
 
 use crate::events::input::world_to_screen;
@@ -10,6 +11,7 @@ pub struct UiState {
     pub theme: Theme,
     pub numeric_buff: String,
     pub numeric_active: bool,
+    pub texts: Vec<Text>,
     pub action: Option<UiAction>,
     pub notifications: Vec<Notification>,
     pub cursor_position: Option<[f32; 2]>,
@@ -20,6 +22,21 @@ pub struct Notification {
     message: String,
     created_at: Instant,
     ttl: Duration,
+}
+
+#[derive(Clone)]
+pub struct Text {
+    pub position: [f32; 2],
+    pub contents: egui::WidgetText,
+}
+
+impl fmt::Debug for Text {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Text")
+            .field("contents", &self.contents.text())
+            .field("position", &self.position)
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -70,6 +87,7 @@ impl UiState {
             numeric_buff,
             numeric_active: false,
             action: None,
+            texts: Vec::new(),
             notifications: Vec::new(),
             cursor_position: None,
         }
@@ -123,22 +141,24 @@ impl UiState {
 
                 let painter = ui.painter();
 
-                if let Some(cursor_pos) = self.cursor_position {
-                    println!("cursor: {:?}", cursor_pos);
+                for text in &self.texts {
+                    // println!("cursor: {:?}", cursor_pos);
                     let screen_position = world_to_screen(
-                        cursor_pos[0],
-                        cursor_pos[1],
+                        text.position[0],
+                        text.position[1],
                         veiwport_rect,
                         camera,
                         pixels_per_point,
                     );
+                    // let rect = painter.text(
                     painter.text(
                         screen_position,
-                        egui::Align2::CENTER_BOTTOM,
-                        "Cursor",
+                        egui::Align2::LEFT_BOTTOM,
+                        text.contents.text(),
                         egui::FontId::proportional(14.0),
                         egui::Color32::WHITE,
                     );
+                    // println!("{:?}", rect);
                 }
 
                 ui.horizontal(|ui| {

@@ -75,6 +75,7 @@ enum Mode {
     DrawLine(DrawLineMode),
     Move(FuncState),
     Copy(FuncState),
+    CreateText,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -118,7 +119,6 @@ struct State<'a> {
     circles: Vec<Circle>,
     circle_indices: Vec<u32>,
     indicators: Vec<Line>,
-
     num_vertices: u32,
     num_vertices_circle: u32,
     num_vertices_indicators: u32,
@@ -602,6 +602,9 @@ pub async fn run() {
                                     state.window.set_cursor_icon(CursorIcon::Default);
                                 }
                                 Mode::Measure(_) => {
+                                    state.window.set_cursor_icon(CursorIcon::Crosshair);
+                                }
+                                Mode::CreateText => {
                                     state.window.set_cursor_icon(CursorIcon::Crosshair);
                                 }
                             }
