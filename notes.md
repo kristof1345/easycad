@@ -2,7 +2,7 @@
 
 # Roadmap
 Next features
-- text editing
+- display the editable text in the text editor(right now, the text editor is empty when opened)
 - line thickness
 
 

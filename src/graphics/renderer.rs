@@ -174,7 +174,8 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
             }
             UiAction::TextEdited(text) => {
                 if let Some(text_to_edit) = state.ui.texts.iter_mut().find(|t| t.editing) {
-                    text_to_edit.contents = WidgetText::from(text);
+                    text_to_edit.contents = WidgetText::from(text.contents);
+                    text_to_edit.annotative = text.annotative;
                     text_to_edit.editing = false;
                 }
             }

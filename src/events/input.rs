@@ -576,6 +576,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                 contents: egui::WidgetText::from("Text"),
                                 rect: None,
                                 editing: false,
+                                annotative: false,
                             });
                             state.mode = Mode::Normal;
                         }

@@ -13,7 +13,8 @@ pub struct UiState {
     pub ui_context: Option<Context>,
     pub theme: Theme,
     pub numeric_buff: String,
-    pub text_buff: String,
+    // pub text_buff: String,
+    pub text_edited: TextReplacement,
     pub numeric_active: bool,
 
     pub texts: Vec<Text>,
@@ -36,6 +37,13 @@ pub struct Text {
     pub contents: egui::WidgetText,
     pub rect: Option<egui::Rect>,
     pub editing: bool,
+    pub annotative: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct TextReplacement {
+    pub contents: String,
+    pub annotative: bool,
 }
 
 impl fmt::Debug for Text {
@@ -54,7 +62,7 @@ pub enum UiAction {
     OpenFilePath(String),
     SaveFile,
     Input(String),
-    TextEdited(String),
+    TextEdited(TextReplacement),
     TextEditCancelled,
     ChangeTheme,
 }
@@ -96,8 +104,12 @@ const THEMES: [Theme; 3] = [
 impl UiState {
     pub fn new() -> Self {
         let numeric_buff = String::new();
-        let text_buff = String::new();
+        // let text_buff = String::new();
         let theme = THEMES[0];
+        let text_edited = TextReplacement {
+            contents: String::new(),
+            annotative: false,
+        };
 
         Self {
             // viewport_rect: None,
@@ -105,7 +117,8 @@ impl UiState {
             ui_context: None,
             theme,
             numeric_buff,
-            text_buff,
+            // text_buff,
+            text_edited,
             numeric_active: false,
             action: None,
             mode: UiMode::Normal,
@@ -193,7 +206,9 @@ impl UiState {
                         screen_position,
                         egui::Align2::LEFT_BOTTOM,
                         text.contents.text(),
-                        egui::FontId::proportional(14.0),
+                        egui::FontId::proportional(
+                            14.0 * if text.annotative { 1.0 } else { camera.zoom },
+                        ),
                         egui::Color32::WHITE,
                     );
                     text.rect = Some(rect);
@@ -301,17 +316,18 @@ impl UiState {
                 .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
                 .show(&ui, |ui| {
                     ui.label("Modify your text:");
-                    ui.text_edit_multiline(&mut self.text_buff);
+                    ui.text_edit_multiline(&mut self.text_edited.contents);
+                    ui.checkbox(&mut self.text_edited.annotative, "Annotative");
 
                     ui.horizontal(|ui| {
                         if ui.button("Cancel").clicked() {
                             self.action = Some(UiAction::TextEditCancelled);
-                            self.text_buff.clear();
+                            self.text_edited.contents.clear();
                             self.mode = UiMode::Normal;
                         }
                         if ui.button("Apply").clicked() {
-                            self.action = Some(UiAction::TextEdited(self.text_buff.clone()));
-                            self.text_buff.clear();
+                            self.action = Some(UiAction::TextEdited(self.text_edited.clone()));
+                            self.text_edited.contents.clear();
                             self.mode = UiMode::Normal;
                         }
                     })
