@@ -707,6 +707,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
 
                         if rect.contains(pos2_position) {
                             state.ui.mode = UiMode::TextEdit;
+                            state.ui.text_edited.contents = text.contents.text().to_string();
+                            state.ui.text_edited.annotative = text.annotative;
                             text.editing = true;
                             // make it quit the loop
                             return true;
