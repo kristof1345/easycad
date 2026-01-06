@@ -2,7 +2,7 @@
 
 # Roadmap
 Next features
-- text
+- text editing
 - line thickness
 
 

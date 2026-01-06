@@ -1,4 +1,4 @@
-use egui::{Align2, Context, Margin};
+use egui::{Align2, Context, Margin, Rect};
 use std::fmt;
 use std::time::{Duration, Instant};
 
@@ -8,11 +8,17 @@ use crate::graphics::camera::Camera;
 
 #[derive(Clone, Debug)]
 pub struct UiState {
+    // pub viewport_rect: Option<egui::Rect>,
+    // pub pixels_per_point: Option<f32>,
+    pub ui_context: Option<Context>,
     pub theme: Theme,
     pub numeric_buff: String,
+    pub text_buff: String,
     pub numeric_active: bool,
+
     pub texts: Vec<Text>,
     pub action: Option<UiAction>,
+    pub mode: UiMode,
     pub notifications: Vec<Notification>,
     pub cursor_position: Option<[f32; 2]>,
 }
@@ -28,6 +34,8 @@ pub struct Notification {
 pub struct Text {
     pub position: [f32; 2],
     pub contents: egui::WidgetText,
+    pub rect: Option<egui::Rect>,
+    pub editing: bool,
 }
 
 impl fmt::Debug for Text {
@@ -46,7 +54,15 @@ pub enum UiAction {
     OpenFilePath(String),
     SaveFile,
     Input(String),
+    TextEdited(String),
+    TextEditCancelled,
     ChangeTheme,
+}
+
+#[derive(Clone, Debug)]
+pub enum UiMode {
+    Normal,
+    TextEdit,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -80,17 +96,37 @@ const THEMES: [Theme; 3] = [
 impl UiState {
     pub fn new() -> Self {
         let numeric_buff = String::new();
+        let text_buff = String::new();
         let theme = THEMES[0];
 
         Self {
+            // viewport_rect: None,
+            // pixels_per_point: None,
+            ui_context: None,
             theme,
             numeric_buff,
+            text_buff,
             numeric_active: false,
             action: None,
+            mode: UiMode::Normal,
             texts: Vec::new(),
             notifications: Vec::new(),
             cursor_position: None,
         }
+    }
+
+    pub fn viewport_rect(&self) -> Rect {
+        self.ui_context
+            .as_ref()
+            .map(|ctx| ctx.available_rect())
+            .unwrap_or(Rect::ZERO)
+    }
+
+    pub fn pixels_per_point(&self) -> f32 {
+        self.ui_context
+            .as_ref()
+            .map(|ctx| ctx.pixels_per_point())
+            .unwrap_or(1.0)
     }
 
     pub fn add_notification(&mut self, text: &str) {
@@ -107,12 +143,15 @@ impl UiState {
     }
 
     pub fn gui(&mut self, ui: &Context, camera: &mut Camera) {
+        self.ui_context = Some(ui.clone());
         self.notifications
             .retain(|n| n.created_at.elapsed() < n.ttl);
 
         let pixels_per_point = ui.pixels_per_point();
+        // self.pixels_per_point = Some(pixels_per_point);
 
-        let veiwport_rect = ui.available_rect();
+        let viewport_rect = ui.available_rect();
+        // self.viewport_rect = Some(viewport_rect);
 
         egui::Area::new(egui::Id::new("feature area"))
             .anchor(Align2::LEFT_TOP, [7.0, 5.0])
@@ -141,23 +180,23 @@ impl UiState {
 
                 let painter = ui.painter();
 
-                for text in &self.texts {
+                for text in &mut self.texts {
                     // println!("cursor: {:?}", cursor_pos);
                     let screen_position = world_to_screen(
                         text.position[0],
                         text.position[1],
-                        veiwport_rect,
+                        viewport_rect,
                         camera,
                         pixels_per_point,
                     );
-                    // let rect = painter.text(
-                    painter.text(
+                    let rect = painter.text(
                         screen_position,
                         egui::Align2::LEFT_BOTTOM,
                         text.contents.text(),
                         egui::FontId::proportional(14.0),
                         egui::Color32::WHITE,
                     );
+                    text.rect = Some(rect);
                     // println!("{:?}", rect);
                 }
 
@@ -253,7 +292,34 @@ impl UiState {
                     });
             });
 
-        egui::Area::new(egui::Id::new("text palette area"))
+        // text editing area
+        if matches!(self.mode, UiMode::TextEdit) {
+            // let mut text = self.texts.iter_mut().find(|t| t.editing).unwrap();
+            egui::Window::new("Text Editor")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(&ui, |ui| {
+                    ui.label("Modify your text:");
+                    ui.text_edit_multiline(&mut self.text_buff);
+
+                    ui.horizontal(|ui| {
+                        if ui.button("Cancel").clicked() {
+                            self.action = Some(UiAction::TextEditCancelled);
+                            self.text_buff.clear();
+                            self.mode = UiMode::Normal;
+                        }
+                        if ui.button("Apply").clicked() {
+                            self.action = Some(UiAction::TextEdited(self.text_buff.clone()));
+                            self.text_buff.clear();
+                            self.mode = UiMode::Normal;
+                        }
+                    })
+                });
+        }
+
+        // input palette
+        egui::Area::new(egui::Id::new("input palette area"))
             .anchor(Align2::CENTER_BOTTOM, [0.0, 0.0])
             .show(&ui, |ui| {
                 let style = ui.style_mut();

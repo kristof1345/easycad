@@ -1,8 +1,9 @@
-use crate::DrawingState;
 use crate::graphics::gui_elements::UiAction;
 use crate::DrawLineMode;
+use crate::DrawingState;
 use crate::Mode;
 use crate::State;
+use egui::WidgetText;
 use egui_wgpu::wgpu;
 use egui_wgpu::ScreenDescriptor;
 use std::iter;
@@ -13,7 +14,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         Err(wgpu::SurfaceError::Lost) => {
             state.resize(state.size);
             return Ok(());
-        },
+        }
         Err(wgpu::SurfaceError::Outdated) => {
             return Ok(());
         }
@@ -56,7 +57,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-        
+
         state.update_axis_vertex_buffer();
         // println!("{:?}", state.num_vertices_indicators);
 
@@ -87,7 +88,15 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         pixels_per_point: state.window().scale_factor() as f32,
     };
 
-    let State {ui, egui, device, queue, window, camera, ..} = state;
+    let State {
+        ui,
+        egui,
+        device,
+        queue,
+        window,
+        camera,
+        ..
+    } = state;
 
     egui.draw(
         device,
@@ -96,9 +105,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         window,
         &view,
         screen_descriptor,
-        |ui_ctx| {
-            ui.gui(ui_ctx, camera)
-        },
+        |ui_ctx| ui.gui(ui_ctx, camera),
     );
 
     if let Some(action) = ui.action.take() {
@@ -142,27 +149,38 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
                         DrawingState::WaitingForSecondPoint(start_pos) => {
                             if let Some(i) = state.active_line_index {
                                 let last_line = &mut state.lines[i as usize];
-    
+
                                 last_line.finish_line_with_length(start_pos, desired_value);
-    
+
                                 state.active_line_index = None;
                                 state.drawing_state = DrawingState::Idle;
                                 state.update_vertex_buffer();
                             }
-                        },
+                        }
                         DrawingState::WaitingForRadius(_start_pos) => {
                             if let Some(i) = state.active_circle_index {
                                 let last_circle = &mut state.circles[i as usize];
 
                                 last_circle.finish_circle_with_radius(desired_value);
-                                
+
                                 state.active_circle_index = None;
                                 state.drawing_state = DrawingState::Idle;
                                 state.update_circle_vertex_buffer();
                             }
-                        },
-                        DrawingState::Idle => {},
+                        }
+                        DrawingState::Idle => {}
                     }
+                }
+            }
+            UiAction::TextEdited(text) => {
+                if let Some(text_to_edit) = state.ui.texts.iter_mut().find(|t| t.editing) {
+                    text_to_edit.contents = WidgetText::from(text);
+                    text_to_edit.editing = false;
+                }
+            }
+            UiAction::TextEditCancelled => {
+                if let Some(text_to_edit) = state.ui.texts.iter_mut().find(|t| t.editing) {
+                    text_to_edit.editing = false;
                 }
             }
         }

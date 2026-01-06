@@ -1,5 +1,5 @@
 use crate::graphics::camera::Camera;
-use crate::graphics::gui_elements::Text;
+use crate::graphics::gui_elements::{Text, UiMode};
 use crate::model::circle::flatten_circles_for_snap;
 use crate::model::circle::Circle;
 use crate::model::circle::CircleOps;
@@ -574,6 +574,8 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.ui.texts.push(Text {
                                 position: snap_or_pos,
                                 contents: egui::WidgetText::from("Text"),
+                                rect: None,
+                                editing: false,
                             });
                             state.mode = Mode::Normal;
                         }
@@ -677,6 +679,38 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     }
                     state.update_vertex_buffer();
                     state.update_circle_vertex_buffer();
+                }
+            }
+            true
+        }
+
+        // edit text
+        WindowEvent::MouseInput {
+            state: ElementState::Pressed,
+            button: MouseButton::Right,
+            ..
+        } if matches!(state.mode, Mode::Normal) => {
+            if let Some(position) = state.cursor_position {
+                let viewport_rect = state.ui.viewport_rect();
+                let pixels_per_point = state.ui.pixels_per_point();
+
+                for text in &mut state.ui.texts {
+                    if let Some(rect) = text.rect {
+                        let pos2_position = world_to_screen(
+                            position[0],
+                            position[1],
+                            viewport_rect,
+                            &state.camera,
+                            pixels_per_point,
+                        );
+
+                        if rect.contains(pos2_position) {
+                            state.ui.mode = UiMode::TextEdit;
+                            text.editing = true;
+                            // make it quit the loop
+                            return true;
+                        }
+                    }
                 }
             }
             true
