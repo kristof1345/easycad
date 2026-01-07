@@ -1,14 +1,27 @@
-use crate::graphics::vertex::Vertex;
 use crate::graphics::gui_elements::ColorScheme;
+use crate::graphics::vertex::Vertex;
 use crate::{DrawLineMode, DrawingState, Mode, State};
+use egui_wgpu::wgpu;
 
-#[derive(Debug, Clone, Copy)]
+// app line struct
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Line {
     // pub id: u64,
     pub vertices: [Vertex; 2],
+    pub thickness: f32,
     pub selected: bool,
     pub del: bool,
     pub is_drawing: bool,
+}
+
+// GPU Instance struct
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct LineInstance {
+    pub start: [f32; 3],
+    pub end: [f32; 3],
+    pub color: [f32; 3],
+    pub thickness: f32,
 }
 
 impl Line {
@@ -23,13 +36,48 @@ impl Line {
         let end_pos = self.vertices[1].position;
         let dx = end_pos[0] - start_pos[0];
         let dy = end_pos[1] - start_pos[1];
-        let length = (dx*dx + dy*dy).sqrt();
+        let length = (dx * dx + dy * dy).sqrt();
         let scale = desired_len / length;
         self.vertices[1] = Vertex {
-            position: [start_pos[0] + dx*scale, start_pos[1] + dy*scale, 0.0],
+            position: [start_pos[0] + dx * scale, start_pos[1] + dy * scale, 0.0],
             color: [1.0, 1.0, 1.0],
         };
         self.is_drawing = false;
+    }
+}
+
+impl LineInstance {
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<LineInstance>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                // start position
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                // end position
+                wgpu::VertexAttribute {
+                    offset: 12,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                // color
+                wgpu::VertexAttribute {
+                    offset: 24,
+                    shader_location: 2,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                // thickness
+                wgpu::VertexAttribute {
+                    offset: 36,
+                    shader_location: 3,
+                    format: wgpu::VertexFormat::Float32,
+                },
+            ],
+        }
     }
 }
 
@@ -41,7 +89,7 @@ pub fn flatten_lines(lines: &mut Vec<Line>, color_scheme: ColorScheme) -> Vec<Ve
         if line.selected {
             line.vertices[0].color = [1.0, 0.0, 0.0]; // bright red
             line.vertices[1].color = [1.0, 0.0, 0.0]; // bright red
-        } else if color_scheme == ColorScheme::Light { 
+        } else if color_scheme == ColorScheme::Light {
             line.vertices[0].color = [0.0, 0.0, 0.0]; // black
             line.vertices[1].color = [0.0, 0.0, 0.0]; // black
         } else {
@@ -53,6 +101,28 @@ pub fn flatten_lines(lines: &mut Vec<Line>, color_scheme: ColorScheme) -> Vec<Ve
     }
 
     flat
+}
+
+// flatten lines into a vec of instances
+pub fn flatten_lines_to_instances(
+    lines: &mut Vec<Line>,
+    color_scheme: ColorScheme,
+) -> Vec<LineInstance> {
+    lines
+        .iter()
+        .map(|line| LineInstance {
+            start: line.vertices[0].position,
+            end: line.vertices[1].position,
+            color: if line.selected {
+                [1.0, 0.0, 0.0]
+            } else if color_scheme == ColorScheme::Light {
+                [0.0, 0.0, 0.0]
+            } else {
+                [1.0, 1.0, 1.0]
+            },
+            thickness: line.thickness,
+        })
+        .collect()
 }
 
 pub trait LineOps {
@@ -80,6 +150,7 @@ impl<'a> LineOps for State<'a> {
                 },
             ],
             // id,
+            thickness: 2.0,
             selected: false,
             del: false,
             is_drawing: is_drawing_flag,
@@ -91,7 +162,7 @@ impl<'a> LineOps for State<'a> {
         }
         // self.active_line_id = Some(id);
 
-        self.update_vertex_buffer();
+        self.update_instance_buffer();
     }
 
     fn update_line(&mut self, position: [f32; 2], is_drawing_flag: bool) {
@@ -99,7 +170,7 @@ impl<'a> LineOps for State<'a> {
         let world_y = position[1];
 
         if self.mode == Mode::DrawLine(DrawLineMode::Normal) {
-            if let Some(i) = self.active_line_index { 
+            if let Some(i) = self.active_line_index {
                 // println!("{:?}", self.active_line_index);
                 // println!("{:?}", self.active_line_id);
                 let last_line = &mut self.lines[i as usize];
@@ -117,7 +188,7 @@ impl<'a> LineOps for State<'a> {
                 }
             }
         } else if self.mode == Mode::DrawLine(DrawLineMode::Ortho) {
-            if let Some(i) = self.active_line_index { 
+            if let Some(i) = self.active_line_index {
                 let last_line = &mut self.lines[i as usize];
                 let prev_vertice = last_line.vertices[0];
 
@@ -144,8 +215,7 @@ impl<'a> LineOps for State<'a> {
             }
         }
 
-        // println!("{:?}", self.lines);
-        self.update_vertex_buffer();
+        self.update_instance_buffer();
     }
 
     // needs to be updated to fit for active lines index
@@ -153,7 +223,7 @@ impl<'a> LineOps for State<'a> {
         self.lines.pop();
         self.drawing_state = DrawingState::Idle;
         self.mode = Mode::Normal;
-        self.update_vertex_buffer();
+        self.update_instance_buffer();
     }
 
     fn unselect_lines(&mut self) {
@@ -163,6 +233,6 @@ impl<'a> LineOps for State<'a> {
             }
         }
 
-        self.update_vertex_buffer();
+        self.update_instance_buffer();
     }
 }

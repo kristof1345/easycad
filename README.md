@@ -6,12 +6,20 @@ I created easycad mainly because I wanted to learn how CAD apps work. I make a l
 
 ## Features
 - [x] Line drawing
-- [ ] Deleting lines
-- [ ] Selecting lines
+- [x] Draw line with length
+- [x] Line thickness
+- [ ] Change line thickness
+- [x] Deleting lines
+- [x] Selecting lines
 - [x] Zooming
 - [x] Panning
-- [ ] Drawing circles
-- [ ] Save/Open
+- [x] Drawing circles
+- [x] Draw circle with radius
+- [ ] Circle thickness
+- [x] Save/Open
+- [x] Create text
+- [x] Edit text + make it annotative
+- [x] Measure tool
 - [ ] Export/Import
 
 ## Installation
@@ -35,3 +43,13 @@ Just press `esc` and whatever you were doing will finish/exit.
 **Mouse**: Press the middle button on your mouse and move your mouse
 **Touchpad**: Press `ctrl`, now you can move your model with your finger on the touchpad.
 
+# Keybindings
+- Draw circle - Key C
+- Draw line - Key L -> toggle Ortho - Key O
+- Selection - Click on object || Key S
+- Deletion - Key Delete -> Click object to delete || Select object -> Key Delete
+- Move - Key M -> Select objects -> Enter -> Click from where to move -> Click where to move
+- Copy - Key K -> Select objects -> Enter -> Click from where to copy -> Click where to copy
+- Measuring - key A
+- Add text - key T
+- Edit text - Right click in text

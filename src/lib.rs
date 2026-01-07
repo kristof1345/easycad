@@ -4,6 +4,7 @@ mod events;
 mod graphics;
 mod model;
 
+use crate::model::line::flatten_lines_to_instances;
 use events::input;
 use graphics::camera;
 use graphics::gui;
@@ -16,8 +17,6 @@ use model::circle::CircleOps;
 use model::line::flatten_lines;
 use model::line::Line;
 
-use gui::EguiRenderer;
-// use gui_elements::gui;
 use egui_wgpu::wgpu::util::DeviceExt;
 use egui_winit::winit;
 use egui_winit::winit::{
@@ -25,6 +24,7 @@ use egui_winit::winit::{
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
+use gui::EguiRenderer;
 use model::line::LineOps;
 use winit::keyboard::ModifiersState;
 use winit::window::CursorIcon;
@@ -106,7 +106,7 @@ struct State<'a> {
 
     ui: UiState,
 
-    vertex_buffer: wgpu::Buffer,
+    instance_buffer: wgpu::Buffer,
     vertex_buffer_circle: wgpu::Buffer,
     index_buffer_circle: wgpu::Buffer,
     axis_vertex_buffer: wgpu::Buffer,
@@ -119,7 +119,6 @@ struct State<'a> {
     circles: Vec<Circle>,
     circle_indices: Vec<u32>,
     indicators: Vec<Line>,
-    num_vertices: u32,
     num_vertices_circle: u32,
     num_vertices_indicators: u32,
 
@@ -242,10 +241,9 @@ impl<'a> State<'a> {
             source: wgpu::ShaderSource::Wgsl(include_str!("assets/xy_axis.wgsl").into()),
         });
 
-        // let vertices = Vec::new();
         let lines = Vec::new();
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("vertex buffer"),
+        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("instance buffer"),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             contents: &[],
         });
@@ -314,6 +312,7 @@ impl<'a> State<'a> {
                     },
                 ],
                 // id: i,
+                thickness: 1.0,
                 selected: false,
                 del: false,
                 is_drawing: false,
@@ -334,7 +333,7 @@ impl<'a> State<'a> {
 
             ui: UiState::new(),
 
-            vertex_buffer,
+            instance_buffer,
             vertex_buffer_circle,
             circle_indices,
             axis_vertex_buffer,
@@ -348,7 +347,6 @@ impl<'a> State<'a> {
             index_buffer_circle,
             indicators,
 
-            num_vertices: 0,
             num_vertices_circle: 0,
             num_vertices_indicators: 0,
 
@@ -380,18 +378,17 @@ impl<'a> State<'a> {
         }
     }
 
-    pub fn update_vertex_buffer(&mut self) {
-        self.vertex_buffer = self
+    pub fn update_instance_buffer(&mut self) {
+        self.instance_buffer = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("vertex buffer"),
+                label: Some("instance buffer"),
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                contents: bytemuck::cast_slice(&flatten_lines(
+                contents: bytemuck::cast_slice(&flatten_lines_to_instances(
                     &mut self.lines,
                     self.ui.theme.color_scheme,
                 )),
             });
-        self.num_vertices = (self.lines.len() as u32) * 2;
     }
 
     pub fn update_circle_vertex_buffer(&mut self) {
@@ -540,7 +537,7 @@ pub async fn run() {
 
     let mut state = State::new(&window).await;
 
-    state.update_vertex_buffer();
+    state.update_instance_buffer();
     state.update_circle_vertex_buffer();
     // state.update_axis_vertex_buffer();
     event_loop

@@ -59,7 +59,6 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         });
 
         state.update_axis_vertex_buffer();
-        // println!("{:?}", state.num_vertices_indicators);
 
         // update the draw method to get the right amount of indicies once we get the logic of the indicators down
         render_pass.set_pipeline(&state.xy_axis_render_pipeline);
@@ -67,11 +66,13 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
         render_pass.draw(0..state.num_vertices_indicators, 0..1);
 
+        // lines
         render_pass.set_pipeline(&state.render_pipeline);
-        render_pass.set_vertex_buffer(0, state.vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(0, state.instance_buffer.slice(..));
         render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
-        render_pass.draw(0..state.num_vertices, 0..1);
+        render_pass.draw(0..4, 0..state.lines.len() as u32);
 
+        // circles
         render_pass.set_pipeline(&state.render_pipeline2);
         render_pass.set_vertex_buffer(0, state.vertex_buffer_circle.slice(..));
         render_pass.set_index_buffer(
@@ -79,7 +80,6 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
             wgpu::IndexFormat::Uint32,
         );
         render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
-        // render_pass.draw(0..state.num_vertices_circle, 0..1);
         render_pass.draw_indexed(0..state.circle_indices.len() as u32, 0, 0..1);
     }
 
@@ -132,7 +132,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
                 };
             }
             UiAction::ChangeTheme => {
-                state.update_vertex_buffer();
+                state.update_instance_buffer();
                 state.update_circle_vertex_buffer();
             }
             UiAction::Input(value) => {
@@ -154,7 +154,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
 
                                 state.active_line_index = None;
                                 state.drawing_state = DrawingState::Idle;
-                                state.update_vertex_buffer();
+                                state.update_instance_buffer();
                             }
                         }
                         DrawingState::WaitingForRadius(_start_pos) => {

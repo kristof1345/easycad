@@ -1,3 +1,4 @@
+use crate::model::line::LineInstance;
 use crate::Vertex;
 use egui_wgpu::wgpu;
 use wgpu::{BindGroupLayout, Device, ShaderModule, SurfaceConfiguration};
@@ -25,7 +26,7 @@ impl Pipeline {
             vertex: wgpu::VertexState {
                 module: shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
+                buffers: &[LineInstance::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: shader,
@@ -37,10 +38,10 @@ impl Pipeline {
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::LineList,
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: None,
                 unclipped_depth: false,
                 conservative: false,
                 polygon_mode: wgpu::PolygonMode::Fill,

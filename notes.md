@@ -2,13 +2,20 @@
 
 # Roadmap
 Next features
-- line thickness
-
-
+- circle thickness
+- make thickness changeable
 
 
 # Features
+- Draw circle - Key C
+- Draw line - Key L -> toggle Ortho - Key O
+- Selection - Click on object || Key S
+- Deletion - Key Delete -> Click object to delete || Select object -> Key Delete
+- Move - Key M -> Select objects -> Enter -> Click from where to move -> Click where to move
+- Copy - Key K -> Select objects -> Enter -> Click from where to copy -> Click where to copy
 - Measuring - key A
+- Add text - key T
+- Edit text - Right click in text
 
 
 # snap
@@ -185,3 +192,21 @@ Winit Size: Returns Physical Pixels (e.g., 1920x1080).
 Egui Rect: Returns Logical Points (e.g., 1280x720).
 Previously, you were grabbing the physical size (1920) and trying to map it to egui's logical coordinate system. This created a mismatch where egui thought the screen was huge (or tiny), causing the "drift" you saw when zooming.
 ui.available_rect() gives you a rectangle that is already in Egui's native Logical Points. You no longer need to manually divide by the scale factor or worry about converting units for the screen bounds—egui has already done that math for you.
+
+
+# Commit 80 -  - Line Thickness
+To simulate line thickness what I did was generate 4 vertexes for each line, essentially creating a rectangle with a width of `thickness`. I did this with the help of wgsl where I generated the 4 vertexes for each line, and with `topology: wgpu::PrimitiveTopology::TriangleStrip,` in `pipeline.rs`, which makes the GPU create a rectangle from 2 triangles.
+
+To make this work I had to create a `LineInstance` type in `line.rs`, because I couldn't pass on `Line` into the GPU becuase of the bool's inside it. This approach doesn't use a vertex_buffer as before because then the GPU wouldn't know which vertex follows which. Here, we pass 2 vertexes to the shader at once, hence the need for `LineInstance`.
+
+The next interesting line is this: `render_pass.draw(0..4, 0..state.lines.len() as u32);` in `renderer.rs`. This essentially tells WGPU that it needs to run the shader code 4 times for each line instance to create the 4 corner vertices. This is called instancing.
+
+Summary of the Flow
+Rust: render_pass.draw(0..4, 0..100) (Draw 100 lines).
+GPU: Starts Instance #0 (The first line).
+GPU: Needs to draw the 4 vertices for this instance.
+Vertex Shader Run 1 (v_index=0): Reads Line #0 data. Looks at width. Calculates Top-Left corner.
+Vertex Shader Run 2 (v_index=1): Reads Line #0 data. Looks at width. Calculates Bottom-Left corner.
+Vertex Shader Run 3 (v_index=2): Reads Line #0 data. Looks at width. Calculates Top-Right corner.
+Vertex Shader Run 4 (v_index=3): Reads Line #0 data. Looks at width. Calculates Bottom-Right corner.
+GPU: Instance #0 is done. Moves to Instance #1. Repeat.

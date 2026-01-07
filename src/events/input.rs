@@ -98,7 +98,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         state.lines.retain(|line| line.selected != true);
                         state.circles.retain(|circle| circle.selected != true);
 
-                        state.update_vertex_buffer();
+                        state.update_instance_buffer();
                         state.update_circle_vertex_buffer();
                     }
                 }
@@ -390,7 +390,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     }
                 }
 
-                state.update_vertex_buffer();
+                state.update_instance_buffer();
                 state.update_circle_vertex_buffer();
                 state.mode = Mode::Move(FuncState::Move([world[0], world[1]]));
             }
@@ -559,7 +559,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                             state.lines.retain(|line: &Line| line.del != true);
                             state.circles.retain(|circle: &Circle| circle.del != true);
 
-                            state.update_vertex_buffer();
+                            state.update_instance_buffer();
                             state.update_circle_vertex_buffer();
                             state.mode = Mode::Normal;
 
@@ -678,7 +678,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         state.lines.retain(|line| line.selected != true);
                         state.circles.retain(|circle| circle.selected != true);
                     }
-                    state.update_vertex_buffer();
+                    state.update_instance_buffer();
                     state.update_circle_vertex_buffer();
                 }
             }
