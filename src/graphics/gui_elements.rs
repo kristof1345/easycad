@@ -8,8 +8,6 @@ use crate::graphics::camera::Camera;
 
 #[derive(Clone, Debug)]
 pub struct UiState {
-    // pub viewport_rect: Option<egui::Rect>,
-    // pub pixels_per_point: Option<f32>,
     pub ui_context: Option<Context>,
     pub theme: Theme,
     pub numeric_buff: String,
@@ -189,7 +187,6 @@ impl UiState {
                 let painter = ui.painter();
 
                 for text in &mut self.texts {
-                    // println!("cursor: {:?}", cursor_pos);
                     let screen_position = world_to_screen(
                         text.position[0],
                         text.position[1],
@@ -207,7 +204,6 @@ impl UiState {
                         egui::Color32::WHITE,
                     );
                     text.rect = Some(rect);
-                    // println!("{:?}", rect);
                 }
 
                 ui.horizontal(|ui| {
@@ -304,7 +300,6 @@ impl UiState {
 
         // text editing area
         if matches!(self.mode, UiMode::TextEdit) {
-            // let mut text = self.texts.iter_mut().find(|t| t.editing).unwrap();
             egui::Window::new("Text Editor")
                 .collapsible(false)
                 .resizable(false)
@@ -343,7 +338,6 @@ impl UiState {
                 style.visuals.widgets.active.rounding = egui::Rounding::same(3.0);
 
                 ui.horizontal_centered(|ui| {
-                    // let mut input = String::new();
                     let res = ui.add(
                         egui::TextEdit::singleline(&mut self.numeric_buff).desired_width(80.0),
                     );

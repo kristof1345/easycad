@@ -387,29 +387,6 @@ impl<'a> State<'a> {
             });
     }
 
-    // update circle vertex buffer
-    // pub fn update_circle_vertex_buffer(&mut self) {
-    //     self.vertex_buffer_circle =
-    //         self.device
-    //             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-    //                 label: Some("circle vertex buffer"),
-    //                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-    //                 contents: bytemuck::cast_slice(&flatten_circles(
-    //                     &mut self.circles,
-    //                     self.ui.theme.color_scheme,
-    //                 )),
-    //             });
-    //     self.num_vertices_circle = (self.circles.len() as u32) * 36; // 37 because of the last closing vertex
-
-    //     self.index_buffer_circle =
-    //         self.device
-    //             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-    //                 label: Some("Circle Index Buffer"),
-    //                 contents: bytemuck::cast_slice(&self.circle_indices),
-    //                 usage: wgpu::BufferUsages::INDEX,
-    //             });
-    // }
-
     // update circle instance buffer
     pub fn update_circle_instance_buffer(&mut self) {
         self.instance_buffer_circle =
@@ -420,6 +397,7 @@ impl<'a> State<'a> {
                     contents: bytemuck::cast_slice(&flatten_circles_to_instances(
                         &mut self.circles,
                         self.ui.theme.color_scheme,
+                        self.camera.zoom,
                     )),
                 });
     }
@@ -549,9 +527,7 @@ pub async fn run() {
     let mut state = State::new(&window).await;
 
     state.update_instance_buffer();
-    // state.update_circle_vertex_buffer();
     state.update_circle_instance_buffer();
-    // state.update_axis_vertex_buffer();
     event_loop
         .run(move |event, control_flow| {
             match event {

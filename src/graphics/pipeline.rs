@@ -76,7 +76,6 @@ impl Pipeline {
             vertex: wgpu::VertexState {
                 module: shader,
                 entry_point: "vs_main",
-                // buffers: &[Vertex::desc()],
                 buffers: &[CircleInstance::desc()],
             },
             fragment: Some(wgpu::FragmentState {
@@ -92,7 +91,7 @@ impl Pipeline {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
                 strip_index_format: None,
                 cull_mode: None,
-                ..Default::default() // front_face: wgpu::FrontFace::Ccw,
+                ..Default::default()
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState {
@@ -138,7 +137,7 @@ impl Pipeline {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::LineList,
                 strip_index_format: None,
-                ..Default::default() // front_face: wgpu::FrontFace::Ccw,
+                ..Default::default()
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState {

@@ -75,13 +75,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         // circles
         render_pass.set_pipeline(&state.render_pipeline2);
         render_pass.set_bind_group(0, &state.camera_bind_group, &[]);
-        // render_pass.set_vertex_buffer(0, state.vertex_buffer_circle.slice(..));
         render_pass.set_vertex_buffer(0, state.instance_buffer_circle.slice(..));
-        // render_pass.set_index_buffer(
-        //     state.index_buffer_circle.slice(..),
-        //     wgpu::IndexFormat::Uint32,
-        // );
-        // render_pass.draw_indexed(0..state.circle_indices.len() as u32, 0, 0..1);
         render_pass.draw(0..4, 0..state.circles.len() as u32);
     }
 
@@ -135,13 +129,9 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
             }
             UiAction::ChangeTheme => {
                 state.update_instance_buffer();
-                // state.update_circle_vertex_buffer();
                 state.update_circle_instance_buffer();
             }
             UiAction::Input(value) => {
-                println!("value we got: {:?}", value);
-                // route input?
-
                 let desired_value: f32 = value.parse().unwrap_or_else(|_err| {
                     eprintln!("input values isn't a number that can be parsed into f32");
                     0.0
@@ -168,7 +158,6 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
 
                                 state.active_circle_index = None;
                                 state.drawing_state = DrawingState::Idle;
-                                // state.update_circle_vertex_buffer();
                                 state.update_circle_instance_buffer();
                             }
                         }

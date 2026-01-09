@@ -99,7 +99,6 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         state.circles.retain(|circle| circle.selected != true);
 
                         state.update_instance_buffer();
-                        // state.update_circle_vertex_buffer();
                         state.update_circle_instance_buffer();
                     }
                 }
@@ -392,7 +391,6 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                 }
 
                 state.update_instance_buffer();
-                // state.update_circle_vertex_buffer();
                 state.update_circle_instance_buffer();
 
                 state.mode = Mode::Move(FuncState::Move([world[0], world[1]]));
