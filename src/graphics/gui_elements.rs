@@ -159,6 +159,40 @@ impl UiState {
 
         let viewport_rect = ui.available_rect();
 
+        let mut visuals = if self.theme.color_scheme == ColorScheme::Dark
+            || self.theme.color_scheme == ColorScheme::Grey
+        {
+            egui::Visuals::dark()
+        } else {
+            egui::Visuals::light()
+        };
+        let style = ui.style();
+        let mut frame = egui::Frame::window(&style);
+        frame.inner_margin = egui::Margin {
+            left: 10.0,
+            right: 10.0,
+            top: 5.0,
+            bottom: 10.0,
+        };
+
+        visuals.window_rounding = egui::Rounding::same(3.0);
+        visuals.window_shadow = egui::epaint::Shadow::default();
+        visuals.window_fill = egui::Color32::from_rgb(40, 40, 40);
+
+        visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(40, 40, 40);
+        visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_gray(80));
+        visuals.widgets.inactive.fg_stroke = egui::Stroke::new(1.0, egui::Color32::WHITE);
+        visuals.widgets.inactive.rounding = egui::Rounding::same(3.0);
+
+        visuals.widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
+        visuals.widgets.hovered.rounding = egui::Rounding::same(3.0);
+
+        visuals.widgets.active.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
+        visuals.widgets.active.expansion = 2.0;
+        visuals.widgets.active.rounding = egui::Rounding::same(3.0);
+
+        ui.set_visuals(visuals);
+
         egui::Area::new(egui::Id::new("feature area"))
             .anchor(Align2::LEFT_TOP, [7.0, 5.0])
             .show(&ui, |ui| {
@@ -169,20 +203,6 @@ impl UiState {
                     egui::TextStyle::Button,
                     egui::FontId::new(12.0, egui::FontFamily::Proportional),
                 );
-
-                style.visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(40, 40, 40);
-                style.visuals.widgets.inactive.bg_stroke =
-                    egui::Stroke::new(1.0, egui::Color32::from_gray(80));
-                style.visuals.widgets.inactive.fg_stroke =
-                    egui::Stroke::new(1.0, egui::Color32::WHITE);
-                style.visuals.widgets.inactive.rounding = egui::Rounding::same(3.0);
-
-                style.visuals.widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
-                style.visuals.widgets.hovered.rounding = egui::Rounding::same(3.0);
-
-                style.visuals.widgets.active.weak_bg_fill = egui::Color32::from_rgb(45, 45, 45);
-                style.visuals.widgets.active.expansion = 2.0;
-                style.visuals.widgets.active.rounding = egui::Rounding::same(3.0);
 
                 let painter = ui.painter();
 
@@ -303,11 +323,24 @@ impl UiState {
             egui::Window::new("Text Editor")
                 .collapsible(false)
                 .resizable(false)
-                .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+                .movable(true)
+                .frame(frame)
+                // .anchor(Align2::CENTER_CENTER, [0.0, 0.0])  - makes the window immovable
                 .show(&ui, |ui| {
+                    let style = ui.style_mut();
+
+                    style.spacing.button_padding = egui::vec2(7.0, 4.0);
+                    style.text_styles.insert(
+                        egui::TextStyle::Button,
+                        egui::FontId::new(12.0, egui::FontFamily::Proportional),
+                    );
+
                     ui.label("Modify your text:");
+                    ui.add_space(5.0);
                     ui.text_edit_multiline(&mut self.text_edited.contents);
+                    ui.add_space(5.0);
                     ui.checkbox(&mut self.text_edited.annotative, "Annotative");
+                    ui.add_space(5.0);
 
                     ui.horizontal(|ui| {
                         if ui.button("Cancel").clicked() {
@@ -320,7 +353,8 @@ impl UiState {
                             self.text_edited.contents.clear();
                             self.mode = UiMode::Normal;
                         }
-                    })
+                    });
+                    // ui.add_space(5.0);
                 });
         }
 
