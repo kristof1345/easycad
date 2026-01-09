@@ -2,7 +2,6 @@
 
 # Roadmap
 Next features
-- circle thickness
 - make thickness changeable
 
 
@@ -194,7 +193,7 @@ Previously, you were grabbing the physical size (1920) and trying to map it to e
 ui.available_rect() gives you a rectangle that is already in Egui's native Logical Points. You no longer need to manually divide by the scale factor or worry about converting units for the screen bounds—egui has already done that math for you.
 
 
-# Commit 80 -  - Line Thickness
+# Commit 80 - 1fc9c32 - Line Thickness - Jan 7, 2026
 To simulate line thickness what I did was generate 4 vertexes for each line, essentially creating a rectangle with a width of `thickness`. I did this with the help of wgsl where I generated the 4 vertexes for each line, and with `topology: wgpu::PrimitiveTopology::TriangleStrip,` in `pipeline.rs`, which makes the GPU create a rectangle from 2 triangles.
 
 To make this work I had to create a `LineInstance` type in `line.rs`, because I couldn't pass on `Line` into the GPU becuase of the bool's inside it. This approach doesn't use a vertex_buffer as before because then the GPU wouldn't know which vertex follows which. Here, we pass 2 vertexes to the shader at once, hence the need for `LineInstance`.

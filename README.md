@@ -15,7 +15,7 @@ I created easycad mainly because I wanted to learn how CAD apps work. I make a l
 - [x] Panning
 - [x] Drawing circles
 - [x] Draw circle with radius
-- [ ] Circle thickness
+- [x] Circle thickness
 - [x] Save/Open
 - [x] Create text
 - [x] Edit text + make it annotative

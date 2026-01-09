@@ -9,6 +9,16 @@ pub struct Circle {
     pub selected: bool,
     pub del: bool,
     pub is_drawing: bool,
+    pub thickness: f32,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct CircleInstance {
+    pub position: [f32; 3],
+    pub color: [f32; 3],
+    pub radius: f32,
+    pub thickness: f32,
 }
 
 impl Circle {
@@ -23,39 +33,100 @@ impl Circle {
     }
 }
 
+impl CircleInstance {
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<CircleInstance>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: 12,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: 24,
+                    shader_location: 2,
+                    format: wgpu::VertexFormat::Float32,
+                },
+                wgpu::VertexAttribute {
+                    offset: 28,
+                    shader_location: 3,
+                    format: wgpu::VertexFormat::Float32,
+                },
+            ],
+        }
+    }
+}
+
 pub trait CircleOps {
-    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool, is_drawing: bool);
+    fn add_circle(
+        &mut self,
+        coordinates: [f32; 2],
+        radius: f32,
+        color: [f32; 3],
+        selected_flag: bool,
+        del_flag: bool,
+        is_drawing: bool,
+    );
     fn update_circle(&mut self, position: [f32; 2], is_drawing_flag: bool);
     fn cancel_drawing_circle(&mut self);
     fn unselect_circles(&mut self);
 }
 
 // flatten vector of circles into flat vector of vertices
-pub fn flatten_circles(circles: &mut Vec<Circle>, color_scheme: ColorScheme) -> Vec<Vertex> {
-    let mut flat = Vec::new();
-    let n = 36;
+// pub fn flatten_circles(circles: &mut Vec<Circle>, color_scheme: ColorScheme) -> Vec<Vertex> {
+//     let mut flat = Vec::new();
+//     let n = 36;
 
-    for circle in circles.iter_mut() {
-        if circle.selected {
-            circle.center.color = [1.0, 0.0, 0.0];
-        } else if color_scheme == ColorScheme::Light {
-            circle.center.color = [0.0, 0.0, 0.0];
-        } else {
-            circle.center.color = [1.0, 1.0, 1.0];
-        }
+//     for circle in circles.iter_mut() {
+//         if circle.selected {
+//             circle.center.color = [1.0, 0.0, 0.0];
+//         } else if color_scheme == ColorScheme::Light {
+//             circle.center.color = [0.0, 0.0, 0.0];
+//         } else {
+//             circle.center.color = [1.0, 1.0, 1.0];
+//         }
 
-        for i in 0..n {
-            let theta = 2.0 * std::f32::consts::PI * (i as f32) / (n as f32);
-            let x = circle.center.position[0] + circle.radius * theta.cos();
-            let y = circle.center.position[1] + circle.radius * theta.sin();
-            flat.push(Vertex {
-                position: [x, y, 0.0],
-                color: circle.center.color,
-            });
-        }
-    }
+//         for i in 0..n {
+//             let theta = 2.0 * std::f32::consts::PI * (i as f32) / (n as f32);
+//             let x = circle.center.position[0] + circle.radius * theta.cos();
+//             let y = circle.center.position[1] + circle.radius * theta.sin();
+//             flat.push(Vertex {
+//                 position: [x, y, 0.0],
+//                 color: circle.center.color,
+//             });
+//         }
+//     }
 
-    flat
+//     flat
+// }
+
+// flatten vector of circles into flat vector of vertices
+pub fn flatten_circles_to_instances(
+    circles: &mut Vec<Circle>,
+    color_scheme: ColorScheme,
+) -> Vec<CircleInstance> {
+    circles
+        .iter()
+        .map(|circle| CircleInstance {
+            position: circle.center.position,
+            color: if circle.selected {
+                [1.0, 0.0, 0.0]
+            } else if color_scheme == ColorScheme::Light {
+                [0.0, 0.0, 0.0]
+            } else {
+                [1.0, 1.0, 1.0]
+            },
+            radius: circle.radius,
+            thickness: circle.thickness,
+        })
+        .collect()
 }
 
 pub fn flatten_circles_for_snap(circles: &mut Vec<Circle>) -> Vec<Vertex> {
@@ -65,13 +136,25 @@ pub fn flatten_circles_for_snap(circles: &mut Vec<Circle>) -> Vec<Vertex> {
         if !circle.is_drawing {
             let x = circle.center.position[0];
             let y = circle.center.position[1];
-    
+
             flat.extend([
-                Vertex{ position: [x, y + circle.radius, 0.0], color: circle.center.color }, // vertex above venter point
-                Vertex { position: [x - circle.radius, y, 0.0], color: circle.center.color }, // vertex to the left of center point
-                Vertex { position: [x, y - circle.radius, 0.0], color: circle.center.color  }, // vertex below venter point
-                Vertex { position: [x + circle.radius, y, 0.0], color: circle.center.color }, // vertex to the right of venter point
-                circle.center
+                Vertex {
+                    position: [x, y + circle.radius, 0.0],
+                    color: circle.center.color,
+                }, // vertex above venter point
+                Vertex {
+                    position: [x - circle.radius, y, 0.0],
+                    color: circle.center.color,
+                }, // vertex to the left of center point
+                Vertex {
+                    position: [x, y - circle.radius, 0.0],
+                    color: circle.center.color,
+                }, // vertex below venter point
+                Vertex {
+                    position: [x + circle.radius, y, 0.0],
+                    color: circle.center.color,
+                }, // vertex to the right of venter point
+                circle.center,
             ]);
         }
     }
@@ -80,12 +163,20 @@ pub fn flatten_circles_for_snap(circles: &mut Vec<Circle>) -> Vec<Vertex> {
 }
 
 impl<'a> CircleOps for State<'a> {
-    fn add_circle(&mut self, coordinates: [f32; 2], radius: f32, color: [f32; 3], selected_flag: bool, del_flag: bool, is_drawing: bool) {
-        let segments = 36;
+    fn add_circle(
+        &mut self,
+        coordinates: [f32; 2],
+        radius: f32,
+        color: [f32; 3],
+        selected_flag: bool,
+        del_flag: bool,
+        is_drawing: bool,
+    ) {
+        // let segments = 36;
 
-        let all_vertices = flatten_circles(&mut self.circles, self.ui.theme.color_scheme);
+        // let all_vertices = flatten_circles(&mut self.circles, self.ui.theme.color_scheme);
 
-        let base_index = all_vertices.len() as u32;
+        // let base_index = all_vertices.len() as u32;
 
         self.circles.push({
             Circle {
@@ -97,22 +188,24 @@ impl<'a> CircleOps for State<'a> {
                 selected: selected_flag,
                 del: del_flag,
                 is_drawing,
+                thickness: 2.0,
             }
         });
 
-        for i in 0..segments - 1 {
-            self.circle_indices.push(base_index + i);
-            self.circle_indices.push(base_index + i + 1);
-        }
-        self.circle_indices.push(base_index + segments - 1);
-        self.circle_indices.push(base_index);
+        // for i in 0..segments - 1 {
+        //     self.circle_indices.push(base_index + i);
+        //     self.circle_indices.push(base_index + i + 1);
+        // }
+        // self.circle_indices.push(base_index + segments - 1);
+        // self.circle_indices.push(base_index);
 
         if is_drawing {
             let index = self.circles.len() - 1;
             self.active_circle_index = Some(index);
         }
 
-        self.update_circle_vertex_buffer();
+        // self.update_circle_vertex_buffer();
+        self.update_circle_instance_buffer();
     }
 
     fn update_circle(&mut self, position: [f32; 2], is_drawing_flag: bool) {
@@ -130,16 +223,18 @@ impl<'a> CircleOps for State<'a> {
             if !is_drawing_flag {
                 self.active_circle_index = None;
             }
-            self.update_circle_vertex_buffer();
+            // self.update_circle_vertex_buffer();
+            self.update_circle_instance_buffer();
         }
     }
 
     fn cancel_drawing_circle(&mut self) {
         self.circles.pop();
-        self.circle_indices.truncate(self.circle_indices.len() - 72);
+        // self.circle_indices.truncate(self.circle_indices.len() - 72);
         self.drawing_state = DrawingState::Idle;
         self.mode = Mode::Normal;
-        self.update_circle_vertex_buffer();
+        // self.update_circle_vertex_buffer();
+        self.update_circle_instance_buffer();
     }
 
     fn unselect_circles(&mut self) {
@@ -149,6 +244,7 @@ impl<'a> CircleOps for State<'a> {
             }
         }
 
-        self.update_circle_vertex_buffer();
+        // self.update_circle_vertex_buffer();
+        self.update_circle_instance_buffer();
     }
 }

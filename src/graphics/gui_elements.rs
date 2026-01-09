@@ -112,12 +112,9 @@ impl UiState {
         };
 
         Self {
-            // viewport_rect: None,
-            // pixels_per_point: None,
             ui_context: None,
             theme,
             numeric_buff,
-            // text_buff,
             text_edited,
             numeric_active: false,
             action: None,
@@ -161,10 +158,8 @@ impl UiState {
             .retain(|n| n.created_at.elapsed() < n.ttl);
 
         let pixels_per_point = ui.pixels_per_point();
-        // self.pixels_per_point = Some(pixels_per_point);
 
         let viewport_rect = ui.available_rect();
-        // self.viewport_rect = Some(viewport_rect);
 
         egui::Area::new(egui::Id::new("feature area"))
             .anchor(Align2::LEFT_TOP, [7.0, 5.0])
@@ -248,9 +243,9 @@ impl UiState {
                         }
                     }
 
-                    if ui.button("add noti").clicked() {
-                        self.add_notification("text");
-                    }
+                    // if ui.button("add noti").clicked() {
+                    //     self.add_notification("text");
+                    // }
                 });
             });
 

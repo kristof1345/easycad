@@ -4,6 +4,7 @@ mod events;
 mod graphics;
 mod model;
 
+use crate::model::circle::flatten_circles_to_instances;
 use crate::model::line::flatten_lines_to_instances;
 use events::input;
 use graphics::camera;
@@ -11,7 +12,6 @@ use graphics::gui;
 use graphics::pipeline::Pipeline;
 use graphics::renderer;
 use graphics::vertex::Vertex;
-use model::circle::flatten_circles;
 use model::circle::Circle;
 use model::circle::CircleOps;
 use model::line::flatten_lines;
@@ -106,9 +106,10 @@ struct State<'a> {
 
     ui: UiState,
 
+    // line instance buffer
     instance_buffer: wgpu::Buffer,
-    vertex_buffer_circle: wgpu::Buffer,
-    index_buffer_circle: wgpu::Buffer,
+    // circle instance buffer
+    instance_buffer_circle: wgpu::Buffer,
     axis_vertex_buffer: wgpu::Buffer,
 
     lines: Vec<Line>,
@@ -117,9 +118,7 @@ struct State<'a> {
     active_circle_index: Option<usize>,
 
     circles: Vec<Circle>,
-    circle_indices: Vec<u32>,
     indicators: Vec<Line>,
-    num_vertices_circle: u32,
     num_vertices_indicators: u32,
 
     drawing_state: DrawingState,
@@ -243,14 +242,14 @@ impl<'a> State<'a> {
 
         let lines = Vec::new();
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("instance buffer"),
+            label: Some("lines instance buffer"),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             contents: &[],
         });
 
         let circles = Vec::new();
-        let vertex_buffer_circle = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("circle vertex buffer"),
+        let instance_buffer_circle = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("circle instance buffer"),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             contents: &[],
         });
@@ -265,12 +264,11 @@ impl<'a> State<'a> {
             contents: bytemuck::cast_slice(&AXIS_COORDINATES),
         });
 
-        let circle_indices = Vec::new();
-        let index_buffer_circle = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Circle index buffer"),
-            contents: bytemuck::cast_slice(&circle_indices),
-            usage: wgpu::BufferUsages::INDEX,
-        });
+        // let index_buffer_circle = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //     label: Some("Circle index buffer"),
+        //     contents: bytemuck::cast_slice(&circle_indices),
+        //     usage: wgpu::BufferUsages::INDEX,
+        // });
 
         let render_pipeline =
             Pipeline::new(&device, &config, &shader, &camera_bind_group_layout).render_pipeline;
@@ -334,8 +332,7 @@ impl<'a> State<'a> {
             ui: UiState::new(),
 
             instance_buffer,
-            vertex_buffer_circle,
-            circle_indices,
+            instance_buffer_circle,
             axis_vertex_buffer,
 
             lines,
@@ -344,10 +341,8 @@ impl<'a> State<'a> {
             active_circle_index: None,
 
             circles,
-            index_buffer_circle,
             indicators,
 
-            num_vertices_circle: 0,
             num_vertices_indicators: 0,
 
             drawing_state: DrawingState::Idle,
@@ -378,6 +373,7 @@ impl<'a> State<'a> {
         }
     }
 
+    // update lines instance buffer
     pub fn update_instance_buffer(&mut self) {
         self.instance_buffer = self
             .device
@@ -391,25 +387,40 @@ impl<'a> State<'a> {
             });
     }
 
-    pub fn update_circle_vertex_buffer(&mut self) {
-        self.vertex_buffer_circle =
+    // update circle vertex buffer
+    // pub fn update_circle_vertex_buffer(&mut self) {
+    //     self.vertex_buffer_circle =
+    //         self.device
+    //             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    //                 label: Some("circle vertex buffer"),
+    //                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+    //                 contents: bytemuck::cast_slice(&flatten_circles(
+    //                     &mut self.circles,
+    //                     self.ui.theme.color_scheme,
+    //                 )),
+    //             });
+    //     self.num_vertices_circle = (self.circles.len() as u32) * 36; // 37 because of the last closing vertex
+
+    //     self.index_buffer_circle =
+    //         self.device
+    //             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    //                 label: Some("Circle Index Buffer"),
+    //                 contents: bytemuck::cast_slice(&self.circle_indices),
+    //                 usage: wgpu::BufferUsages::INDEX,
+    //             });
+    // }
+
+    // update circle instance buffer
+    pub fn update_circle_instance_buffer(&mut self) {
+        self.instance_buffer_circle =
             self.device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("circle vertex buffer"),
+                    label: Some("circle instance buffer"),
                     usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                    contents: bytemuck::cast_slice(&flatten_circles(
+                    contents: bytemuck::cast_slice(&flatten_circles_to_instances(
                         &mut self.circles,
                         self.ui.theme.color_scheme,
                     )),
-                });
-        self.num_vertices_circle = (self.circles.len() as u32) * 36; // 37 because of the last closing vertex
-
-        self.index_buffer_circle =
-            self.device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Circle Index Buffer"),
-                    contents: bytemuck::cast_slice(&self.circle_indices),
-                    usage: wgpu::BufferUsages::INDEX,
                 });
     }
 
@@ -538,7 +549,8 @@ pub async fn run() {
     let mut state = State::new(&window).await;
 
     state.update_instance_buffer();
-    state.update_circle_vertex_buffer();
+    // state.update_circle_vertex_buffer();
+    state.update_circle_instance_buffer();
     // state.update_axis_vertex_buffer();
     event_loop
         .run(move |event, control_flow| {
