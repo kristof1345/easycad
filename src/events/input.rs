@@ -578,9 +578,12 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                 position: snap_or_pos,
                                 contents: egui::WidgetText::from("Text"),
                                 rect: None,
-                                editing: false,
+                                editing: true,
                                 annotative: false,
                             });
+                            state.ui.mode = UiMode::TextEdit;
+                            state.ui.text_edited.contents = String::from("Text");
+                            state.ui.text_edited.annotative = false;
                             state.mode = Mode::Normal;
                         }
                         _ => {}
