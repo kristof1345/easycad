@@ -155,7 +155,7 @@ impl<'a> CircleOps for State<'a> {
                 selected: selected_flag,
                 del: del_flag,
                 is_drawing,
-                thickness: 2.0,
+                thickness: 1.0,
             }
         });
 

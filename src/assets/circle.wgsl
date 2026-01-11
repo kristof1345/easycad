@@ -26,8 +26,17 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = input.color;
-    out.radius = input.radius;
+    // out.radius = input.radius;
     out.thickness = input.thickness;
+
+    let center_proj = camera.matrix * vec4<f32>(input.position, 1.0);
+    let center_screen = center_proj.xy;
+
+    let radius_point_world = input.position + vec3<f32>(input.radius, 0.0, 0.0);
+    let radius_point_proj = camera.matrix * vec4<f32>(radius_point_world, 1.0);
+
+    let screen_radius = distance(center_screen, radius_point_proj.xy);
+    out.radius = screen_radius;
 
     // 1. Define a unit square (-1 to +1) based on vertex index
     // 0: (-1, -1), 1: (-1, 1), 2: (1, -1), 3: (1, 1)
@@ -40,7 +49,7 @@ fn vs_main(
 
     // 2. Calculate the size of the billboard
     // We need the quad to be big enough to hold the outer edge of the thick circle
-    let outer_radius = input.radius + (input.thickness * 0.5);
+    let outer_radius = screen_radius + (input.thickness * 0.5);
 
     // This is the offset in PIXELS from the circle center
     let pixel_offset = corner * outer_radius;
@@ -49,12 +58,13 @@ fn vs_main(
     out.local_pos = pixel_offset;
 
     // 3. Move the quad to the correct world position
-    let world_pos = input.position.xy + pixel_offset;
+    let final_screen_pos = center_screen + pixel_offset;
+    // let world_pos = input.position.xy + pixel_offset;
 
     // 4. Standard Camera Projection (Same as your lines)
-    let transformed_pos = camera.matrix * vec4<f32>(world_pos, 0.0, 1.0);
-    let clip_x = transformed_pos.x / (camera.window_size.x * 0.5);
-    let clip_y = transformed_pos.y / (camera.window_size.y * 0.5);
+    // let transformed_pos = camera.matrix * vec4<f32>(world_pos, 0.0, 1.0);
+    let clip_x = final_screen_pos.x / (camera.window_size.x * 0.5);
+    let clip_y = final_screen_pos.y / (camera.window_size.y * 0.5);
 
     out.clip_position = vec4<f32>(clip_x, clip_y, input.position.z, 1.0);
     return out;
