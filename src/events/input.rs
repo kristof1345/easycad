@@ -71,11 +71,25 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                     if state.modifiers.control_key() {
                         let mut path: String = String::new();
 
-                        if let Some(file_path) = rfd::FileDialog::new().pick_file() {
+                        if let Some(file_path) = rfd::FileDialog::new()
+                            .add_filter(".dxf, .cad", &["dxf", "cad"])
+                            .pick_file()
+                        {
                             path = file_path.display().to_string();
+                            println!("{path}");
                         }
 
-                        let loaded = state.load_from_dxf(path);
+                        let len = path.len();
+                        let extension: &str = &path[len - 3..len];
+                        println!("{extension}");
+
+                        let loaded: Result<(), Box<dyn std::error::Error>> = if extension == "dxf" {
+                            state.load_from_dxf(path)
+                        } else if extension == "cad" {
+                            state.load_from_cad(path)
+                        } else {
+                            Err("Unsupported file extension".into())
+                        };
 
                         match loaded {
                             Ok(_) => println!("loaded file"),

@@ -1,5 +1,6 @@
 use egui_wgpu::wgpu;
 
+mod compiler;
 mod events;
 mod graphics;
 mod model;
@@ -17,6 +18,8 @@ use model::circle::CircleOps;
 use model::line::flatten_lines;
 use model::line::Line;
 
+use compiler::compiler::Compiler;
+
 use egui_wgpu::wgpu::util::DeviceExt;
 use egui_winit::winit;
 use egui_winit::winit::{
@@ -33,6 +36,7 @@ use dxf::entities::EntityType;
 use dxf::entities::*;
 use dxf::Drawing;
 
+use std::fs;
 use std::time::Instant as OtherInstant;
 
 use crate::graphics::gui_elements::ColorScheme;
@@ -471,6 +475,24 @@ impl<'a> State<'a> {
         }
 
         drawing.save_file("C:/Users/krist/Desktop/test.dxf")?;
+
+        Ok(())
+    }
+
+    pub fn load_from_cad(&mut self, file_path: String) -> Result<(), Box<dyn std::error::Error>> {
+        let src = fs::read_to_string(file_path)?;
+        let mut compiler = Compiler::new();
+
+        for (i, line) in src.lines().enumerate() {
+            let trimmed_line = line.trim();
+            if trimmed_line.is_empty() {
+                continue;
+            }
+
+            if let Err(e) = compiler.process_line(self, line) {
+                eprintln!("error: {e}");
+            }
+        }
 
         Ok(())
     }
