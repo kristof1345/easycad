@@ -1,0 +1,73 @@
+// ==========================================
+// CONFIGURATION
+// ==========================================
+param width = 400
+param height = 300
+param roof_height = 150
+
+// Calculate center X for symmetry
+param center_x = width / 2
+
+// ==========================================
+// MAIN STRUCTURE (WALLS)
+// ==========================================
+// Define corners
+point p_bot_left 0 0
+point p_bot_right width 0
+point p_top_right width height
+point p_top_left 0 height
+
+// Draw walls
+line wall_btm p_bot_left p_bot_right
+line wall_rgt p_bot_right p_top_right
+line wall_top p_top_right p_top_left
+line wall_lft p_top_left p_bot_left
+
+// ==========================================
+// ROOF
+// ==========================================
+// Calculate the peak of the roof
+param roof_peak_y = height + roof_height
+
+// Define peak point
+point p_peak center_x roof_peak_y
+
+// Draw roof slopes
+line roof_left p_top_left p_peak
+line roof_right p_peak p_top_right
+
+// ==========================================
+// DOOR
+// ==========================================
+param door_w = 80
+param door_h = 160
+
+// Calculate door coordinates relative to center
+param door_x_l = center_x - (door_w / 2)
+param door_x_r = center_x + (door_w / 2)
+
+point p_door_bl door_x_l 0
+point p_door_br door_x_r 0
+point p_door_tl door_x_l door_h
+point p_door_tr door_x_r door_h
+
+// Draw door frame
+line door_l p_door_bl p_door_tl
+line door_t p_door_tl p_door_tr
+line door_r p_door_tr p_door_br
+
+// Doorknob (Circle test)
+param knob_x = door_x_r - 10
+param knob_y = door_h / 2
+point p_knob knob_x knob_y
+circle doorknob p_knob 5
+
+// ==========================================
+// ATTIC WINDOW (Circle Test)
+// ==========================================
+// Place a round window in the center of the roof triangle
+param win_y = height + (roof_height / 3)
+param win_radius = 25
+
+point p_win_center center_x win_y
+circle attic_window p_win_center win_radius

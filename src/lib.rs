@@ -480,16 +480,17 @@ impl<'a> State<'a> {
     }
 
     pub fn load_from_cad(&mut self, file_path: String) -> Result<(), Box<dyn std::error::Error>> {
-        let src = fs::read_to_string(file_path)?;
+        let src = fs::read_to_string(&file_path)?;
         let mut compiler = Compiler::new();
 
+        println!("Compiling {}...", file_path);
         for (i, line) in src.lines().enumerate() {
             let trimmed_line = line.trim();
             if trimmed_line.is_empty() {
                 continue;
             }
 
-            if let Err(e) = compiler.process_line(self, line) {
+            if let Err(e) = compiler.process_line(self, line, i) {
                 eprintln!("error: {e}");
             }
         }

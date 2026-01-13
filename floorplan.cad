@@ -1,0 +1,115 @@
+// ==========================================
+// CONFIGURATION
+// ==========================================
+param width = 800
+param depth = 600
+param wall_thk = 20
+
+// ==========================================
+// CALCULATED BOUNDARIES
+// ==========================================
+// Inner room dimensions
+param inner_w = width - wall_thk
+param inner_d = depth - wall_thk
+
+// ==========================================
+// CORNERS (OUTER & INNER)
+// ==========================================
+// Outer Corners
+point out_bl 0 0
+point out_br width 0
+point out_tr width depth
+point out_tl 0 depth
+
+// Inner Corners
+point in_bl wall_thk wall_thk
+point in_br inner_w wall_thk
+point in_tr inner_w inner_d
+point in_tl wall_thk inner_d
+
+// ==========================================
+// SIDE WALLS (Solid, no openings)
+// ==========================================
+// Left Wall
+line wall_left_out out_bl out_tl
+line wall_left_in  in_bl  in_tl
+line wall_left_cap_top out_tl in_tl
+line wall_left_cap_btm out_bl in_bl
+
+// Right Wall
+line wall_right_out out_br out_tr
+line wall_right_in  in_br  in_tr
+line wall_right_cap_top out_tr in_tr
+line wall_right_cap_btm out_br in_br
+
+// ==========================================
+// FRONT WALL WITH DOOR (Bottom)
+// ==========================================
+param door_width = 100
+param door_center = width / 2
+param door_x_left = door_center - (door_width / 2)
+param door_x_right = door_center + (door_width / 2)
+
+// Door opening points (Outer)
+point d_out_l door_x_left 0
+point d_out_r door_x_right 0
+
+// Door opening points (Inner)
+point d_in_l door_x_left wall_thk
+point d_in_r door_x_right wall_thk
+
+// Wall segments (Left of door)
+line wall_front_l_out out_bl d_out_l
+line wall_front_l_in  in_bl  d_in_l
+line door_jamb_l      d_out_l d_in_l
+
+// Wall segments (Right of door)
+line wall_front_r_out out_br d_out_r
+line wall_front_r_in  in_br  d_in_r
+line door_jamb_r      d_out_r d_in_r
+
+// Door Swing (Visualizing the door open at 90 degrees)
+// Hinged on the left
+param door_open_y = 0 - door_width
+point p_door_swing d_out_l door_open_y
+line door_panel d_out_l p_door_swing
+
+// ==========================================
+// BACK WALL WITH WINDOW (Top)
+// ==========================================
+param win_width = 150
+param win_center = width / 2
+param win_x_left = win_center - (win_width / 2)
+param win_x_right = win_center + (win_width / 2)
+
+// Window opening points (Outer y=depth, Inner y=inner_d)
+point w_out_l win_x_left depth
+point w_out_r win_x_right depth
+point w_in_l  win_x_left inner_d
+point w_in_r  win_x_right inner_d
+
+// Wall segments (Left of window)
+line wall_back_l_out out_tl w_out_l
+line wall_back_l_in  in_tl  w_in_l
+line win_jamb_l      w_out_l w_in_l
+
+// Wall segments (Right of window)
+line wall_back_r_out out_tr w_out_r
+line wall_back_r_in  in_tr  w_in_r
+line win_jamb_r      w_out_r w_in_r
+
+// Window Glass (Line through center of wall)
+param glass_y = depth - (wall_thk / 2)
+point p_glass_l win_x_left glass_y
+point p_glass_r win_x_right glass_y
+line window_glass p_glass_l p_glass_r
+
+// ==========================================
+// INTERIOR (Round Table)
+// ==========================================
+param table_radius = 60
+param room_cx = width / 2
+param room_cy = depth / 2
+
+point p_room_center room_cx room_cy
+circle dining_table p_room_center table_radius
