@@ -1,4 +1,4 @@
-use egui::{Align2, Context, Rect};
+use egui::{Align2, Context, Margin, Rect};
 use std::fmt;
 use std::time::{Duration, Instant};
 
@@ -273,211 +273,23 @@ impl UiState {
                         }
                     }
 
-                    // if ui.button("add noti").clicked() {
-                    //     self.add_notification("text");
-                    // }
+                    if ui.button("add noti").clicked() {
+                        self.add_notification("text");
+                    }
                 });
-            });
-
-        // egui::Area::new(egui::Id::new("feature area"))
-        //     .anchor(Align2::LEFT_TOP, [7.0, 5.0])
-        //     .show(&ui, |ui| {
-        //         let style = ui.style_mut();
-
-        //         style.spacing.button_padding = egui::vec2(7.0, 4.0);
-        //         style.text_styles.insert(
-        //             egui::TextStyle::Button,
-        //             egui::FontId::new(12.0, egui::FontFamily::Proportional),
-        //         );
-
-        //         let painter = ui.painter();
-
-        //         for text in &mut self.texts {
-        //             let screen_position = world_to_screen(
-        //                 text.position[0],
-        //                 text.position[1],
-        //                 viewport_rect,
-        //                 camera,
-        //                 pixels_per_point,
-        //             );
-        //             let rect = painter.text(
-        //                 screen_position,
-        //                 egui::Align2::LEFT_BOTTOM,
-        //                 text.contents.text(),
-        //                 egui::FontId::proportional(
-        //                     14.0 * if text.annotative { 1.0 } else { camera.zoom },
-        //                 ),
-        //                 egui::Color32::WHITE,
-        //             );
-        //             text.rect = Some(rect);
-        //         }
-
-        //         ui.horizontal(|ui| {
-        //             if ui.add(egui::Button::new("line")).clicked() {
-        //                 self.action = Some(UiAction::DrawLine);
-        //             }
-
-        //             if ui.add(egui::Button::new("circle")).clicked() {
-        //                 self.action = Some(UiAction::DrawCircle);
-        //             }
-
-        //             if ui.button("open").clicked() {
-        //                 if let Some(path) = rfd::FileDialog::new()
-        //                     .add_filter(".dxf, .cad", &["dxf", "cad"])
-        //                     .pick_file()
-        //                 {
-        //                     self.action = Some(UiAction::OpenFilePath(path.display().to_string()));
-        //                 }
-        //             }
-
-        //             if ui.button("save").clicked() {
-        //                 self.action = Some(UiAction::SaveFile);
-        //             }
-
-        //             if ui.button("toggle theme").clicked() {
-        //                 if let Some(ind) = THEMES
-        //                     .iter()
-        //                     .position(|theme| theme.color_scheme == self.theme.color_scheme)
-        //                 {
-        //                     if ind == THEMES.len() - 1 {
-        //                         self.theme = THEMES[0];
-        //                     } else {
-        //                         self.theme = THEMES[ind + 1];
-        //                     }
-        //                     self.action = Some(UiAction::ChangeTheme);
-        //                 }
-        //             }
-
-        //             // if ui.button("add noti").clicked() {
-        //             //     self.add_notification("text");
-        //             // }
-        //         });
-        //     });
-
-        // separate these two. put position into the corner, make notifications appear on top of them
-        egui::Area::new(egui::Id::new("bottom right panel"))
-            .anchor(Align2::RIGHT_BOTTOM, [0.0, 0.0])
-            .show(&ui, |ui| {
-                egui::Frame::none()
-                    .inner_margin(egui::Margin {
-                        right: 10.0,
-                        bottom: 10.0,
-                        ..Default::default()
-                    })
-                    .show(ui, |ui| {
-                        ui.with_layout(egui::Layout::left_to_right(egui::Align::Max), |ui| {
-                            if let Some(cursor_pos) = self.cursor_position {
-                                ui.label(format!("x: {:.3}", cursor_pos[0]));
-                                ui.label(format!("y: {:.3}", cursor_pos[1]));
-                            }
-                        });
-                    });
             });
 
         egui::TopBottomPanel::bottom("bottom_panel")
-            .exact_height(30.0)
+            .exact_height(25.0)
             .show(ui, |ui| {
                 // Use a horizontal layout to arrange items side-by-side
-                ui.horizontal(|ui| {
-                    // --- 1. Notifications (Left Side) ---
-                    // We use a separate scope or just a layout block.
-                    // If you want them to stack vertically inside the bar, keep top_down.
-                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                        for note in &self.notifications {
-                            let frame = egui::Frame::default()
-                                .fill(egui::Color32::from_rgb(40, 40, 40))
-                                .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(80)))
-                                .rounding(egui::Rounding::same(3.0))
-                                .multiply_with_opacity(0.5)
-                                .inner_margin(egui::Margin::symmetric(7.0, 4.0));
-
-                            frame.show(ui, |ui| {
-                                // Max width reduced slightly to fit in a bar context
-                                ui.set_max_width(250.0);
-                                ui.label(
-                                    egui::RichText::new(&note.message)
-                                        .color(egui::Color32::WHITE)
-                                        .size(12.0),
-                                );
-                            });
-
-                            // Add small spacing between notifications
-                            ui.add_space(5.0);
-                        }
-                    });
-
-                    // Spacer to push the input to the center/right if desired
-                    // ui.allocate_ui_with_layout(...) // Complex centering logic omitted for brevity
-
-                    // --- 2. Input Palette (Right/Center) ---
-                    // We use ui.scope() to isolate the style changes so they don't affect the notifications
-                    // ui.scope(|ui| {
-                    //     let style = ui.style_mut();
-                    //     style.visuals.extreme_bg_color = egui::Color32::from_rgb(40, 40, 40);
-                    //     style.visuals.widgets.inactive.bg_stroke =
-                    //         egui::Stroke::new(1.0, egui::Color32::from_gray(80));
-                    //     style.visuals.widgets.inactive.rounding = egui::Rounding::same(3.0);
-                    //     style.visuals.widgets.hovered.rounding = egui::Rounding::same(3.0);
-                    //     style.visuals.widgets.active.rounding = egui::Rounding::same(3.0);
-
-                    //     // Use right_to_left if you want it docked to the right,
-                    //     // or keep horizontal_centered if you want it to flow after notifications.
-                    //     // Here we use with_layout to ensure it aligns nicely.
-                    //     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                    //         let res = ui.add(
-                    //             egui::TextEdit::singleline(&mut self.numeric_buff).desired_width(80.0),
-                    //         );
-
-                    //         if self.numeric_active {
-                    //             res.request_focus();
-                    //         }
-
-                    //         // Logic for "Enter" key
-                    //         if res.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                    //             println!("enter");
-                    //             self.numeric_active = false;
-                    //             let value = self.numeric_buff.clone();
-                    //             self.action = Some(UiAction::Input(value));
-                    //             self.numeric_buff.clear();
-                    //             res.surrender_focus();
-                    //         }
-                    //     });
-                    // });
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if let Some(cursor_pos) = self.cursor_position {
+                        ui.label(format!("x: {:.3}", cursor_pos[0]));
+                        ui.label(format!("y: {:.3}", cursor_pos[1]));
+                    }
                 });
             });
-
-        // egui::Area::new(egui::Id::new("notifications"))
-        //     .anchor(Align2::LEFT_BOTTOM, [0.0, 0.0])
-        //     .show(&ui, |ui| {
-        //         egui::Frame::none()
-        //             .inner_margin(egui::Margin {
-        //                 right: 10.0,
-        //                 bottom: 27.0,
-        //                 ..Default::default()
-        //             })
-        //             .show(ui, |ui| {
-        //                 ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
-        //                     for note in &self.notifications {
-        //                         let frame = egui::Frame::default()
-        //                             .fill(egui::Color32::from_rgb(40, 40, 40))
-        //                             .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(80)))
-        //                             .rounding(egui::Rounding::same(3.0))
-        //                             .multiply_with_opacity(0.5)
-        //                             .inner_margin(Margin::symmetric(7.0, 4.0));
-
-        //                         frame.show(ui, |ui| {
-        //                             ui.set_max_width(250.0);
-        //                             ui.label(
-        //                                 egui::RichText::new(&note.message)
-        //                                     .color(egui::Color32::WHITE)
-        //                                     .size(12.0),
-        //                             );
-        //                         });
-        //                         ui.add_space(5.0);
-        //                     }
-        //                 });
-        //             });
-        //     });
 
         // input palette
         egui::Area::new(egui::Id::new("input palette area"))
@@ -492,9 +304,11 @@ impl UiState {
                 style.visuals.widgets.hovered.rounding = egui::Rounding::same(3.0);
                 style.visuals.widgets.active.rounding = egui::Rounding::same(3.0);
 
-                ui.horizontal_centered(|ui| {
+                ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                    // ui.horizontal_centered(|ui| {
+                    ui.add_space(5.0);
                     let res = ui.add(
-                        egui::TextEdit::singleline(&mut self.numeric_buff).desired_width(80.0),
+                        egui::TextEdit::singleline(&mut self.numeric_buff).desired_width(100.0),
                     );
 
                     if self.numeric_active {
@@ -510,7 +324,30 @@ impl UiState {
                         self.numeric_buff.clear();
                         res.surrender_focus();
                     }
-                })
+                    // });
+                    ui.add_space(5.0);
+
+                    ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                        for note in &self.notifications {
+                            let frame = egui::Frame::default()
+                                .fill(egui::Color32::from_rgb(40, 40, 40))
+                                .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(80)))
+                                .rounding(egui::Rounding::same(3.0))
+                                .multiply_with_opacity(0.5)
+                                .inner_margin(Margin::symmetric(7.0, 4.0));
+
+                            frame.show(ui, |ui| {
+                                ui.set_max_width(100.0);
+                                ui.label(
+                                    egui::RichText::new(&note.message)
+                                        .color(egui::Color32::WHITE)
+                                        .size(12.0),
+                                );
+                            });
+                            ui.add_space(5.0);
+                        }
+                    });
+                });
             });
 
         // text editing area
