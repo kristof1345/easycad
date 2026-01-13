@@ -401,7 +401,7 @@ impl<'a> State<'a> {
                     contents: bytemuck::cast_slice(&flatten_circles_to_instances(
                         &mut self.circles,
                         self.ui.theme.color_scheme,
-                        self.camera.zoom,
+                        // self.camera.zoom,
                     )),
                 });
     }

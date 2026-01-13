@@ -83,7 +83,7 @@ pub trait CircleOps {
 pub fn flatten_circles_to_instances(
     circles: &mut Vec<Circle>,
     color_scheme: ColorScheme,
-    zoom: f32,
+    // zoom: f32,
 ) -> Vec<CircleInstance> {
     circles
         .iter()
@@ -97,7 +97,7 @@ pub fn flatten_circles_to_instances(
                 [1.0, 1.0, 1.0]
             },
             radius: circle.radius,
-            thickness: circle.thickness * zoom,
+            thickness: circle.thickness,
         })
         .collect()
 }
@@ -155,7 +155,7 @@ impl<'a> CircleOps for State<'a> {
                 selected: selected_flag,
                 del: del_flag,
                 is_drawing,
-                thickness: 1.0,
+                thickness: 5.0,
             }
         });
 

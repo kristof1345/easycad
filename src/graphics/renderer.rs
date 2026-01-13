@@ -112,8 +112,16 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
             UiAction::DrawCircle => {
                 state.mode = Mode::DrawCircle;
             }
-            UiAction::OpenFilePath(file_path) => {
-                let loaded = state.load_from_dxf(file_path);
+            UiAction::OpenFilePath(path) => {
+                let len = path.len();
+                let extension: &str = &path[len - 3..len];
+                let loaded: Result<(), Box<dyn std::error::Error>> = if extension == "dxf" {
+                    state.load_from_dxf(path)
+                } else if extension == "cad" {
+                    state.load_from_cad(path)
+                } else {
+                    Err("Unsupported file extension".into())
+                };
 
                 match loaded {
                     Ok(_) => println!("loaded file"),

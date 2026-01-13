@@ -48,6 +48,12 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                         state.mode = Mode::Copy(FuncState::Selection);
                     }
                 }
+                KeyCode::KeyR => {
+                    if state.modifiers.control_key() {
+                        state.ui.ui_config.open_right_side_panel =
+                            !state.ui.ui_config.open_right_side_panel;
+                    }
+                }
                 KeyCode::KeyM => {
                     if state.mode == Mode::Normal {
                         state.mode = Mode::Move(FuncState::Selection);
