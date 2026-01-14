@@ -84,6 +84,9 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         pixels_per_point: state.window().scale_factor() as f32,
     };
 
+    let lines = &mut state.lines;
+    let circles = &mut state.circles;
+
     let State {
         ui,
         egui,
@@ -101,7 +104,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         window,
         &view,
         screen_descriptor,
-        |ui_ctx| ui.gui(ui_ctx, camera),
+        |ui_ctx| ui.gui(ui_ctx, camera, lines, circles),
     );
 
     if let Some(action) = ui.action.take() {

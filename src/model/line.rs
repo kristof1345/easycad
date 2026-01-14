@@ -44,6 +44,14 @@ impl Line {
         };
         self.is_drawing = false;
     }
+
+    pub fn get_len(&self) -> f32 {
+        let dx = self.vertices[0].position[0] - self.vertices[1].position[0];
+        let dy = self.vertices[0].position[1] - self.vertices[1].position[1];
+        let sum = (dx * dx + dy * dy).sqrt();
+        let rounded = (sum * 1000.0).round() / 1000.0;
+        rounded
+    }
 }
 
 impl LineInstance {

@@ -1,3 +1,4 @@
+use crate::Line;
 use egui::{Align2, Context, Margin, Rect};
 use std::fmt;
 use std::time::{Duration, Instant};
@@ -5,6 +6,7 @@ use std::time::{Duration, Instant};
 use crate::events::input::world_to_screen;
 
 use crate::graphics::camera::Camera;
+use crate::model::circle::Circle;
 
 #[derive(Clone, Debug)]
 pub struct UiState {
@@ -160,7 +162,13 @@ impl UiState {
         self.numeric_buff.push(ch);
     }
 
-    pub fn gui(&mut self, ui: &Context, camera: &mut Camera) {
+    pub fn gui(
+        &mut self,
+        ui: &Context,
+        camera: &mut Camera,
+        lines: &mut Vec<Line>,
+        circles: &mut Vec<Circle>,
+    ) {
         self.ui_context = Some(ui.clone());
         self.notifications
             .retain(|n| n.created_at.elapsed() < n.ttl);
@@ -395,7 +403,75 @@ impl UiState {
             egui::SidePanel::right("right panel")
                 .resizable(true)
                 .show(ui, |ui| {
-                    ui.label("hey");
+                    ui.label("Properties");
+                    ui.add_space(5.0);
+
+                    let mut sel_line = Vec::new();
+                    let mut sel_circle = Vec::new();
+
+                    for line in lines {
+                        if line.selected {
+                            sel_line.push(line);
+                        }
+                    }
+                    for circle in circles {
+                        if circle.selected {
+                            sel_circle.push(circle);
+                        }
+                    }
+
+                    let num_lines = sel_line.len();
+                    let num_circles = sel_circle.len();
+                    let obj_type = if num_lines > 0 && num_circles > 0 {
+                        "Undefined"
+                    } else if num_lines > 0 {
+                        "Line"
+                    } else if num_circles > 0 {
+                        "Circle"
+                    } else {
+                        "Undefined"
+                    };
+
+                    ui.label(format!("Type: {}", obj_type));
+                    ui.label(format!("Number of objects: {}", num_lines + num_circles));
+
+                    if obj_type == "Line" {
+                        ui.label(format!(
+                            "Thickness: {}",
+                            if num_lines == 1 {
+                                sel_line[0].thickness
+                            } else {
+                                0.0
+                            }
+                        ));
+                        ui.label(format!(
+                            "Length: {}",
+                            if num_lines == 1 {
+                                sel_line[0].get_len()
+                            } else {
+                                0.0
+                            }
+                        ));
+                    }
+
+                    if obj_type == "Circle" {
+                        ui.label(format!(
+                            "Thickness: {}",
+                            if num_circles == 1 {
+                                sel_circle[0].thickness
+                            } else {
+                                0.0
+                            }
+                        ));
+                        ui.label(format!(
+                            "Radius: {}",
+                            if num_circles == 1 {
+                                sel_circle[0].radius
+                            } else {
+                                0.0
+                            }
+                        ));
+                    }
                 });
         }
     }
