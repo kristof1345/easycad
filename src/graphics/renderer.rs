@@ -97,6 +97,8 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         ..
     } = state;
 
+    let mut buffers_need_update: bool = false;
+
     egui.draw(
         device,
         queue,
@@ -104,7 +106,7 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
         window,
         &view,
         screen_descriptor,
-        |ui_ctx| ui.gui(ui_ctx, camera, lines, circles),
+        |ui_ctx| ui.gui(ui_ctx, camera, lines, circles, &mut buffers_need_update),
     );
 
     if let Some(action) = ui.action.take() {
@@ -189,6 +191,11 @@ pub fn render(state: &mut State) -> Result<(), wgpu::SurfaceError> {
                 }
             }
         }
+    }
+
+    if buffers_need_update {
+        state.update_instance_buffer();
+        state.update_circle_instance_buffer();
     }
 
     state.queue.submit(iter::once(encoder.finish()));

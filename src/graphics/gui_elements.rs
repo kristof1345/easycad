@@ -168,6 +168,7 @@ impl UiState {
         camera: &mut Camera,
         lines: &mut Vec<Line>,
         circles: &mut Vec<Circle>,
+        dirty: &mut bool,
     ) {
         self.ui_context = Some(ui.clone());
         self.notifications
@@ -402,9 +403,12 @@ impl UiState {
         if self.ui_config.open_right_side_panel {
             egui::SidePanel::right("right panel")
                 .resizable(true)
+                .default_width(200.0)
+                .width_range(100.0..=400.0)
                 .show(ui, |ui| {
-                    ui.label("Properties");
                     ui.add_space(5.0);
+                    ui.heading("Properties");
+                    ui.separator();
 
                     let mut sel_line = Vec::new();
                     let mut sel_circle = Vec::new();
@@ -435,43 +439,108 @@ impl UiState {
                     ui.label(format!("Type: {}", obj_type));
                     ui.label(format!("Number of objects: {}", num_lines + num_circles));
 
-                    if obj_type == "Line" {
-                        ui.label(format!(
-                            "Thickness: {}",
-                            if num_lines == 1 {
-                                sel_line[0].thickness
-                            } else {
-                                0.0
-                            }
-                        ));
-                        ui.label(format!(
-                            "Length: {}",
-                            if num_lines == 1 {
-                                sel_line[0].get_len()
-                            } else {
-                                0.0
-                            }
-                        ));
-                    }
+                    egui::Grid::new("properties_grid")
+                        .num_columns(2)
+                        .spacing([40.0, 4.0])
+                        .striped(true)
+                        .show(ui, |ui| {
+                            let mut changed = false;
 
-                    if obj_type == "Circle" {
-                        ui.label(format!(
-                            "Thickness: {}",
-                            if num_circles == 1 {
-                                sel_circle[0].thickness
-                            } else {
-                                0.0
+                            if obj_type == "Line" && sel_line.len() == 1 {
+                                ui.label("Thickness");
+                                changed |= ui
+                                    .add(
+                                        egui::DragValue::new(&mut sel_line[0].thickness).speed(0.1),
+                                    )
+                                    .changed();
+                                ui.end_row();
+
+                                ui.label("Length");
+                                // ui.label(format!("{}", sel_line[0].get_len()));
+                                let mut line_len = sel_line[0].get_len();
+                                if ui
+                                    .add(egui::DragValue::new(&mut line_len).speed(0.1))
+                                    .changed()
+                                {
+                                    let start_pos = [
+                                        sel_line[0].vertices[0].position[0],
+                                        sel_line[0].vertices[0].position[1],
+                                    ];
+                                    sel_line[0].finish_line_with_length(start_pos, line_len);
+                                    changed = true;
+                                }
+                                ui.end_row();
+
+                                ui.label("Start X coordinate");
+                                changed |= ui
+                                    .add(egui::DragValue::new(
+                                        &mut sel_line[0].vertices[0].position[0],
+                                    ))
+                                    .changed();
+                                ui.end_row();
+
+                                ui.label("Start Y coordinate");
+                                changed |= ui
+                                    .add(egui::DragValue::new(
+                                        &mut sel_line[0].vertices[0].position[1],
+                                    ))
+                                    .changed();
+                                ui.end_row();
+
+                                ui.label("End X coordinate");
+                                changed |= ui
+                                    .add(egui::DragValue::new(
+                                        &mut sel_line[0].vertices[1].position[0],
+                                    ))
+                                    .changed();
+                                ui.end_row();
+
+                                ui.label("End Y coordinate");
+                                changed |= ui
+                                    .add(egui::DragValue::new(
+                                        &mut sel_line[0].vertices[1].position[1],
+                                    ))
+                                    .changed();
+                                ui.end_row();
                             }
-                        ));
-                        ui.label(format!(
-                            "Radius: {}",
-                            if num_circles == 1 {
-                                sel_circle[0].radius
-                            } else {
-                                0.0
+
+                            if obj_type == "Circle" && sel_circle.len() == 1 {
+                                ui.label("Thickness");
+                                changed |= ui
+                                    .add(
+                                        egui::DragValue::new(&mut sel_circle[0].thickness)
+                                            .speed(0.1),
+                                    )
+                                    .changed();
+                                ui.end_row();
+
+                                ui.label("Radius");
+                                changed |= ui
+                                    .add(egui::DragValue::new(&mut sel_circle[0].radius).speed(0.1))
+                                    .changed();
+                                ui.end_row();
+
+                                ui.label("Start X coordinate");
+                                changed |= ui
+                                    .add(egui::DragValue::new(
+                                        &mut sel_circle[0].center.position[0],
+                                    ))
+                                    .changed();
+                                ui.end_row();
+
+                                ui.label("Start Y coordinate");
+                                changed |= ui
+                                    .add(egui::DragValue::new(
+                                        &mut sel_circle[0].center.position[1],
+                                    ))
+                                    .changed();
+                                ui.end_row();
                             }
-                        ));
-                    }
+
+                            if changed {
+                                *dirty = true;
+                            }
+                        });
                 });
         }
     }
