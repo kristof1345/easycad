@@ -456,7 +456,6 @@ impl UiState {
                                 ui.end_row();
 
                                 ui.label("Length");
-                                // ui.label(format!("{}", sel_line[0].get_len()));
                                 let mut line_len = sel_line[0].get_len();
                                 if ui
                                     .add(egui::DragValue::new(&mut line_len).speed(0.1))
@@ -502,6 +501,64 @@ impl UiState {
                                     ))
                                     .changed();
                                 ui.end_row();
+                            } else if obj_type == "Line" && sel_line.len() > 1 {
+                                ui.label("Thickness");
+                                let mut thickness = sel_line[0].thickness;
+                                if ui
+                                    .add(egui::DragValue::new(&mut thickness).speed(0.25))
+                                    .changed()
+                                {
+                                    for line in &mut sel_line {
+                                        line.thickness = thickness;
+                                    }
+                                    changed = true;
+                                }
+                                ui.end_row();
+
+                                ui.label("Length");
+                                let mut line_len = sel_line[0].get_len();
+                                if ui
+                                    .add(egui::DragValue::new(&mut line_len).speed(0.1))
+                                    .changed()
+                                {
+                                    for line in &mut sel_line {
+                                        let start_pos = [
+                                            line.vertices[0].position[0],
+                                            line.vertices[0].position[1],
+                                        ];
+                                        line.finish_line_with_length(start_pos, line_len);
+                                    }
+                                    changed = true;
+                                }
+                                ui.end_row();
+
+                                ui.label("Start X coordinate");
+                                ui.label(format!(
+                                    "{:.3}",
+                                    &mut sel_line[0].vertices[0].position[0]
+                                ));
+                                ui.end_row();
+
+                                ui.label("Start Y coordinate");
+                                ui.label(format!(
+                                    "{:.3}",
+                                    &mut sel_line[0].vertices[0].position[1]
+                                ));
+                                ui.end_row();
+
+                                ui.label("End X coordinate");
+                                ui.label(format!(
+                                    "{:.3}",
+                                    &mut sel_line[0].vertices[1].position[0]
+                                ));
+                                ui.end_row();
+
+                                ui.label("End Y coordinate");
+                                ui.label(format!(
+                                    "{:.3}",
+                                    &mut sel_line[0].vertices[1].position[1]
+                                ));
+                                ui.end_row();
                             }
 
                             if obj_type == "Circle" && sel_circle.len() == 1 {
@@ -534,6 +591,40 @@ impl UiState {
                                         &mut sel_circle[0].center.position[1],
                                     ))
                                     .changed();
+                                ui.end_row();
+                            } else if obj_type == "Circle" && sel_circle.len() > 1 {
+                                ui.label("Thickness");
+                                let mut thickness = sel_circle[0].thickness;
+                                if ui
+                                    .add(egui::DragValue::new(&mut thickness).speed(0.25))
+                                    .changed()
+                                {
+                                    for circle in &mut sel_circle {
+                                        circle.thickness = thickness;
+                                    }
+                                    changed = true;
+                                }
+                                ui.end_row();
+
+                                ui.label("Radius");
+                                let mut radius = sel_circle[0].radius;
+                                if ui
+                                    .add(egui::DragValue::new(&mut radius).speed(0.1))
+                                    .changed()
+                                {
+                                    for circle in &mut sel_circle {
+                                        circle.radius = radius;
+                                    }
+                                    changed = true;
+                                }
+                                ui.end_row();
+
+                                ui.label("Start X coordinate");
+                                ui.label(format!("{:.3}", &mut sel_circle[0].center.position[0]));
+                                ui.end_row();
+
+                                ui.label("Start Y coordinate");
+                                ui.label(format!("{:.3}", &mut sel_circle[0].center.position[1]));
                                 ui.end_row();
                             }
 

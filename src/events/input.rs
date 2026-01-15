@@ -483,7 +483,7 @@ pub fn handle_input(state: &mut State, event: &WindowEvent) -> bool {
                                     let dy = pos[1] - snap_or_pos[1];
                                     let sum = (dx * dx + dy * dy).sqrt();
                                     let rounded = (sum * 1000.0).round() / 1000.0;
-                                    // println!("{}", rounded);
+                                    println!("{}", rounded);
                                     state.ui.add_notification(&format!("{}", rounded));
                                     state.mode = Mode::Measure(None);
                                 }
