@@ -410,7 +410,9 @@ impl<'a> State<'a> {
         let flat_indicators = flatten_lines(&mut self.indicators, self.ui.theme.color_scheme);
 
         let mut out = Vec::with_capacity(4 + flat_indicators.len());
-        out.extend_from_slice(&AXIS_COORDINATES);
+        if self.ui.axis_active {
+            out.extend_from_slice(&AXIS_COORDINATES);
+        }
         out.extend_from_slice(&flat_indicators);
 
         if self.ui.theme.color_scheme == ColorScheme::Light {

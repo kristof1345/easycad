@@ -8,6 +8,13 @@ use crate::events::input::world_to_screen;
 use crate::graphics::camera::Camera;
 use crate::model::circle::Circle;
 
+const ICON_CIRCLE: &str = "\u{e18a}";
+const ICON_LINE: &str = "\u{e6d2}";
+const ICON_OPEN: &str = "\u{e230}";
+const ICON_SAVE: &str = "\u{e248}";
+const ICON_TOGGLE_THEME: &str = "\u{e6f4}";
+const ICON_AXIS: &str = "\u{ee64}";
+
 #[derive(Clone, Debug)]
 pub struct UiState {
     pub ui_context: Option<Context>,
@@ -17,6 +24,7 @@ pub struct UiState {
     // pub text_buff: String,
     pub text_edited: TextReplacement,
     pub numeric_active: bool,
+    pub axis_active: bool,
 
     pub texts: Vec<Text>,
     pub action: Option<UiAction>,
@@ -127,6 +135,7 @@ impl UiState {
             numeric_buff,
             text_edited,
             numeric_active: false,
+            axis_active: true,
             action: None,
             mode: UiMode::Normal,
             texts: Vec::new(),
@@ -162,6 +171,26 @@ impl UiState {
         self.numeric_buff.push(ch);
     }
 
+    fn setup_custom_fonts(&mut self) {
+        let mut fonts = egui::FontDefinitions::default();
+        let mut font_data = egui::FontData::from_static(include_bytes!("../assets/Phosphor.ttf"));
+
+        font_data.tweak.y_offset_factor = 0.13;
+        // Optional: If icons look too small compared to text, scale them up here
+        font_data.tweak.scale = 1.15;
+        fonts.font_data.insert("phosphor".to_owned(), font_data);
+
+        fonts
+            .families
+            .get_mut(&egui::FontFamily::Proportional)
+            .unwrap()
+            .push("phosphor".to_owned());
+
+        if let Some(ctx) = &mut self.ui_context {
+            ctx.set_fonts(fonts);
+        }
+    }
+
     pub fn gui(
         &mut self,
         ui: &Context,
@@ -171,6 +200,8 @@ impl UiState {
         dirty: &mut bool,
     ) {
         self.ui_context = Some(ui.clone());
+        self.setup_custom_fonts();
+
         self.notifications
             .retain(|n| n.created_at.elapsed() < n.ttl);
 
@@ -247,15 +278,15 @@ impl UiState {
                 }
 
                 ui.horizontal_centered(|ui| {
-                    if ui.add(egui::Button::new("line")).clicked() {
+                    if ui.button(ICON_LINE).clicked() {
                         self.action = Some(UiAction::DrawLine);
                     }
 
-                    if ui.add(egui::Button::new("circle")).clicked() {
+                    if ui.button(ICON_CIRCLE).clicked() {
                         self.action = Some(UiAction::DrawCircle);
                     }
 
-                    if ui.button("open").clicked() {
+                    if ui.button(ICON_OPEN).clicked() {
                         if let Some(path) = rfd::FileDialog::new()
                             .add_filter(".dxf, .cad", &["dxf", "cad"])
                             .pick_file()
@@ -264,11 +295,11 @@ impl UiState {
                         }
                     }
 
-                    if ui.button("save").clicked() {
+                    if ui.button(ICON_SAVE).clicked() {
                         self.action = Some(UiAction::SaveFile);
                     }
 
-                    if ui.button("toggle theme").clicked() {
+                    if ui.button(ICON_TOGGLE_THEME).clicked() {
                         if let Some(ind) = THEMES
                             .iter()
                             .position(|theme| theme.color_scheme == self.theme.color_scheme)
@@ -291,12 +322,18 @@ impl UiState {
         egui::TopBottomPanel::bottom("bottom_panel")
             .exact_height(25.0)
             .show(ui, |ui| {
-                // Use a horizontal layout to arrange items side-by-side
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if let Some(cursor_pos) = self.cursor_position {
-                        ui.label(format!("x: {:.3}", cursor_pos[0]));
-                        ui.label(format!("y: {:.3}", cursor_pos[1]));
-                    }
+                ui.horizontal_centered(|ui| {
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        if ui.button(ICON_AXIS).clicked() {
+                            self.axis_active = !self.axis_active;
+                        }
+                    });
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if let Some(cursor_pos) = self.cursor_position {
+                            ui.label(format!("x: {:.3}", cursor_pos[0]));
+                            ui.label(format!("y: {:.3}", cursor_pos[1]));
+                        }
+                    });
                 });
             });
 
